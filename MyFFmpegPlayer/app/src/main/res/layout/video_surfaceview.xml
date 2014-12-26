@@ -13,7 +13,7 @@
         android:layout_alignParentTop="true"
         android:background="#40ffffff"
         android:orientation="horizontal"
-        android:visibility="gone" >
+        android:visibility="visible" >
 
         <Spinner
             android:id="@+id/language_spinner"
@@ -36,7 +36,7 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
         android:background="#40ffffff"
-        android:visibility="gone" >
+        android:visibility="visible" >
 
         <Button
             android:id="@+id/play_pause"
@@ -63,13 +63,30 @@
             android:layout_toRightOf="@+id/scale_type" />
     </RelativeLayout>
 
-    <com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegSurfaceView
+    <LinearLayout
         android:id="@+id/video_view"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:visibility="visible"
+        android:orientation="horizontal"
         android:layout_above="@+id/controls"
         android:layout_below="@+id/streams"
-        android:visibility="visible" />
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent">
+        <com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegSurfaceView
+            android:id="@+id/video_view1"
+            android:layout_weight="0.5"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            />
+
+        <com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegSurfaceView
+            android:id="@+id/video_view2"
+            android:layout_weight="0.5"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            />
+
+    </LinearLayout>
+
 
     <ProgressBar
         android:id="@+id/loading_view"

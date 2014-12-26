@@ -222,13 +222,12 @@ public class FFmpegPlayer {
 		public int width;
 	}
 
-	public FFmpegPlayer(FFmpegDisplay videoView, Activity activity) {
+	public FFmpegPlayer(Activity activity) {
 		this.activity = activity;
 		int error = initNative();
 		if (error != 0)
 			throw new RuntimeException(String.format(
 					"Could not initialize player: %d", error));
-		videoView.setMpegPlayer(this);
 	}
 
 	@Override
@@ -255,7 +254,12 @@ public class FFmpegPlayer {
 
 	private native long getVideoDurationNative();
 	
-	public native void render(Surface surface);
+	public native void attachSurface1(Surface surface);
+    public native void attachSurface2(Surface surface);
+
+    public void attachView(FFmpegDisplay view, FFmpegDisplay.AttachmentSide side) {
+        view.setMpegPlayer(this, side);
+    }
 
 	/**
 	 * 

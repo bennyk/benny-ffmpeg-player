@@ -20,6 +20,6 @@ APP_ABI  := x86
 #APP_ABI  := mips
 #APP_ABI := armeabi-v7a
 APP_PLATFORM := android-10
-#APP_OPTIM := debug
+APP_OPTIM := debug
 
 APP_STL := gnustl_static

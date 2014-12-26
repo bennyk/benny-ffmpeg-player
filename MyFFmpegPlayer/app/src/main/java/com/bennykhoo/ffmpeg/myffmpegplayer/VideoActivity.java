@@ -38,6 +38,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.BaseColumns;
 import android.support.v4.widget.SimpleCursorAdapter;
+import android.view.Surface;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
@@ -134,10 +135,18 @@ public class VideoActivity extends Activity implements OnClickListener,
 		mSubtitleSpinner.setAdapter(mSubtitleAdapter);
 		mSubtitleSpinner.setOnItemSelectedListener(this);
 
-		mVideoView = this.findViewById(R.id.video_view);
-		mMpegPlayer = new FFmpegPlayer((FFmpegDisplay) mVideoView, this);
+        mMpegPlayer = new FFmpegPlayer(this);
 		mMpegPlayer.setMpegListener(this);
+
+        View surfaceView1 = this.findViewById(R.id.video_view1);
+        View surfaceView2 = this.findViewById(R.id.video_view2);
+
+        mMpegPlayer.attachView((FFmpegDisplay) surfaceView1, FFmpegDisplay.AttachmentSide.LEFT);
+        mMpegPlayer.attachView((FFmpegDisplay) surfaceView2, FFmpegDisplay.AttachmentSide.RIGHT);
 		setDataSource();
+
+        // container for our multi surface views
+        mVideoView = this.findViewById(R.id.video_view);
 	}
 
 	@Override

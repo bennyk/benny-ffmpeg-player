@@ -129,7 +129,8 @@ void jni_player_render_frame_start(JNIEnv *env, jobject thiz);
 void jni_player_render_frame_stop(JNIEnv *env, jobject thiz);
 
 jlong jni_player_get_video_duration(JNIEnv *env, jobject thiz);
-void jni_player_render(JNIEnv *env, jobject thiz, jobject surface);
+void jni_player_attach_surface1(JNIEnv *env, jobject thiz, jobject surface1);
+void jni_player_attach_surface2(JNIEnv *env, jobject thiz, jobject surface2);
 
 static JNINativeMethod player_methods[] = {
 
@@ -148,7 +149,9 @@ static JNINativeMethod player_methods[] = {
 	{"renderFrameStop", "()V", (void*) jni_player_render_frame_stop},
 
 	{"getVideoDurationNative", "()J", (void*) jni_player_get_video_duration},
-	{"render", "(Landroid/view/Surface;)V", (void*) jni_player_render},
+	{"attachSurface1", "(Landroid/view/Surface;)V", (void*) jni_player_attach_surface1},
+	{"attachSurface2", "(Landroid/view/Surface;)V", (void*) jni_player_attach_surface2},
+
 };
 
 #endif

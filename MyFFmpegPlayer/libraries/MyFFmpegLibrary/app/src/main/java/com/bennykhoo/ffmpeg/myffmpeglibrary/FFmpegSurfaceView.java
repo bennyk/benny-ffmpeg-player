@@ -21,12 +21,14 @@ package com.bennykhoo.ffmpeg.myffmpeglibrary;
 import android.content.Context;
 import android.graphics.PixelFormat;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 public class FFmpegSurfaceView extends SurfaceView implements FFmpegDisplay,
 		SurfaceHolder.Callback {
+    private String TAG = "FFmpegSurfaceView";
 
 	public static enum ScaleType {
 		CENTER_CROP, CENTER_INSIDE, FIT_XY
@@ -34,6 +36,7 @@ public class FFmpegSurfaceView extends SurfaceView implements FFmpegDisplay,
 
 	private FFmpegPlayer mMpegPlayer = null;
 	private boolean mCreated = false;
+    private AttachmentSide attachmentSide;
 
 	public FFmpegSurfaceView(Context context) {
 		this(context, null, 0);
@@ -52,12 +55,13 @@ public class FFmpegSurfaceView extends SurfaceView implements FFmpegDisplay,
 	}
 
 	@Override
-	public void setMpegPlayer(FFmpegPlayer fFmpegPlayer) {
+	public void setMpegPlayer(FFmpegPlayer fFmpegPlayer, AttachmentSide side) {
 		if (mMpegPlayer != null)
 			throw new RuntimeException(
 					"setMpegPlayer could not be called twice");
 
 		this.mMpegPlayer = fFmpegPlayer;
+        this.attachmentSide = side;
 	}
 
 	@Override
@@ -73,7 +77,18 @@ public class FFmpegSurfaceView extends SurfaceView implements FFmpegDisplay,
 		}
 
 		Surface surface = holder.getSurface();
-		mMpegPlayer.render(surface);
+        if (attachmentSide == AttachmentSide.LEFT) {
+            Log.i(TAG, "attaching left surface");
+            mMpegPlayer.attachSurface1(surface);
+        }
+        else if (attachmentSide == AttachmentSide.RIGHT) {
+            Log.i(TAG, "attaching right surface");
+            mMpegPlayer.attachSurface2(surface);
+        }
+        else {
+            throw new RuntimeException(
+                    "invalid attachment side " + attachmentSide);
+        }
 		mCreated = true;
 	}
 

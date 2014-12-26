@@ -158,7 +158,9 @@ struct Player {
 	JavaVM *get_javavm;
 	jobject thiz;
 
-	ANativeWindow* window;
+	ANativeWindow* window1;
+	ANativeWindow* window2;
+
 	AVFrame *rgb_frame;
 
 	AVFrame *tmp_frame;
@@ -789,8 +791,8 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 	int to_write;
 	int err = 0;
 	AVFrame *rgb_frame = player->rgb_frame;
-	ANativeWindow_Buffer buffer;
-	ANativeWindow * window;
+	ANativeWindow_Buffer buffer1, buffer2;
+	ANativeWindow * window1, * window2;
 
 #ifdef MEASURE_TIME
 	struct timespec timespec1, timespec2, diff;
@@ -827,20 +829,35 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 #endif // MEASURE_TIME
 
 	pthread_mutex_lock(&player->mutex_queue);
-	window = player->window;
-	if (window == NULL) {
+
+	if (player->window1 == NULL || player->window2 == NULL) {
+		LOGE(1, "player_decode_video missing windows!\n");
+		return -ERROR_WHILE_DECODING_VIDEO;
+	}
+
+	window1 = player->window1;
+	if (window1 == NULL) {
 		pthread_mutex_unlock(&player->mutex_queue);
 		goto skip_frame;
 	}
-	ANativeWindow_setBuffersGeometry(window, ctx->width, ctx->height,
+
+	ANativeWindow_setBuffersGeometry(window1, ctx->width/2, ctx->height,
 			WINDOW_FORMAT_RGBA_8888);
-	if (ANativeWindow_lock(window, &buffer, NULL) != 0) {
+	if (ANativeWindow_lock(window1, &buffer1, NULL) != 0) {
+		pthread_mutex_unlock(&player->mutex_queue);
+		goto skip_frame;
+	}
+
+	window2 = player->window2;
+	ANativeWindow_setBuffersGeometry(window2, ctx->width/2, ctx->height,
+			WINDOW_FORMAT_RGBA_8888);
+	if (ANativeWindow_lock(window2, &buffer2, NULL) != 0) {
 		pthread_mutex_unlock(&player->mutex_queue);
 		goto skip_frame;
 	}
 	pthread_mutex_unlock(&player->mutex_queue);
 
-	int format = buffer.format;
+	int format = buffer1.format;
 	if (format < 0) {
 		LOGE(1, "Could not get window format")
 	}
@@ -858,17 +875,18 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 		LOGE(1, "Unknown window format");
 	}
 
-	avpicture_fill((AVPicture *) rgb_frame, buffer.bits, out_format,
-			buffer.width, buffer.height);
-	rgb_frame->data[0] = buffer.bits;
+	avpicture_fill((AVPicture *) rgb_frame, buffer1.bits, out_format,
+			buffer1.width, buffer1.height);
+
+	rgb_frame->data[0] = buffer1.bits;
 	if (format == WINDOW_FORMAT_RGBA_8888) {
-		rgb_frame->linesize[0] = buffer.stride * 4;
+		rgb_frame->linesize[0] = buffer1.stride * 4;
 	} else {
 		LOGE(1, "Unknown window format");
 	}
 	LOGI(6,
 			"Buffer: width: %d, height: %d, stride: %d",
-			buffer.width, buffer.height, buffer.stride);
+			buffer1.width, buffer1.height, buffer1.stride);
 	int i = 0;
 
 #ifdef MEASURE_TIME
@@ -883,7 +901,7 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 	LOGI(7, "player_decode_video copying...");
 	AVFrame * out_frame;
 	int rescale;
-	if (ctx->width == buffer.width && ctx->height == buffer.height) {
+	if (ctx->width == buffer1.width && ctx->height == buffer1.height) {
 		// This always should be true
 		out_frame = rgb_frame;
 		rescale = FALSE;
@@ -922,9 +940,16 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 		// Never occurs
 		__ARGBScale(out_frame->data[0], out_frame->linesize[0], ctx->width,
 				ctx->height, rgb_frame->data[0], rgb_frame->linesize[0],
-				buffer.width, buffer.height, __kFilterNone);
+				buffer1.width, buffer1.height, __kFilterNone);
 		out_frame = rgb_frame;
 	}
+
+	// duplicate rgb_frame bitmap to surface2
+	AVPicture rgb_frame2;
+	avpicture_fill(&rgb_frame2, buffer2.bits, out_format,
+				buffer2.width, buffer2.height);
+	rgb_frame2.linesize[0] = buffer2.stride * 4;
+	av_picture_copy(&rgb_frame2, rgb_frame, out_format, buffer2.width, buffer2.height);
 
 	//int64_t pts = av_frame_get_best_effort_timestamp(frame);
 	int64_t pts = frame->best_effort_timestamp;
@@ -1020,7 +1045,8 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 	}
 #endif // SUBTITLES
 
-	ANativeWindow_unlockAndPost(window);
+	ANativeWindow_unlockAndPost(window1);
+	ANativeWindow_unlockAndPost(window2);
 skip_frame:
 	return err;
 }
@@ -2872,21 +2898,48 @@ jlong jni_player_get_video_duration(JNIEnv *env, jobject thiz) {
 	return player->video_duration;
 }
 
-void jni_player_render(JNIEnv *env, jobject thiz, jobject surface) {
+void jni_player_attach_surface1(JNIEnv *env, jobject thiz, jobject surface1) {
 	struct Player * player = player_get_player_field(env, thiz);
-	ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
+	ANativeWindow* window1 = ANativeWindow_fromSurface(env, surface1);
 
-	LOGI(4, "jni_player_render")
+	LOGI(4, "jni_player_attach_surface1")
 	pthread_mutex_lock(&player->mutex_queue);
-	if (player->window != NULL) {
+	if (player->window1 != NULL) {
 		LOGE(1,
-				"jni_player_render Window have to be null before "
+				"jni_player_render Window1 have to be null before "
 				"calling render function");
 		exit(1);
 	}
-	ANativeWindow_acquire(window);
-	player->window = window;
-	pthread_cond_broadcast(&player->cond_queue);
+	ANativeWindow_acquire(window1);
+	player->window1 = window1;
+
+	if (player->window1 != NULL && player->window2 != NULL) {
+		LOGI(4, "jni_player_attach_surface1 attachment complete")
+		pthread_cond_broadcast(&player->cond_queue);
+	}
+	pthread_mutex_unlock(&player->mutex_queue);
+}
+
+void jni_player_attach_surface2(JNIEnv *env, jobject thiz, jobject surface2) {
+	struct Player * player = player_get_player_field(env, thiz);
+	ANativeWindow* window2 = ANativeWindow_fromSurface(env, surface2);
+
+	LOGI(4, "jni_player_attach_surface2")
+	pthread_mutex_lock(&player->mutex_queue);
+	if (player->window2 != NULL) {
+		LOGE(1,
+				"jni_player_render Window2 have to be null before "
+				"calling render function");
+		exit(1);
+	}
+	ANativeWindow_acquire(window2);
+	player->window2 = window2;
+
+	if (player->window1 != NULL && player->window2 != NULL) {
+		LOGI(4, "jni_player_attach_surface2 attachment complete")
+		pthread_cond_broadcast(&player->cond_queue);
+	}
+
 	pthread_mutex_unlock(&player->mutex_queue);
 }
 
@@ -2905,15 +2958,19 @@ void jni_player_render_frame_stop(JNIEnv *env, jobject thiz) {
 
 	LOGI(5, "jni_player_render_frame_stop waiting for mutex");
 	pthread_mutex_lock(&player->mutex_queue);
-	if (player->window == NULL) {
+	if (player->window1 == NULL) {
 		LOGE(1,
 				"jni_player_render_frame_stop Window is null this "
 				"mean that you did not call render function");
 		exit(1);
 	}
 	LOGI(5, "jni_player_render_frame_stop releasing window");
-	ANativeWindow_release(player->window);
-	player->window = NULL;
+	ANativeWindow_release(player->window1);
+	player->window1 = NULL;
+
+	ANativeWindow_release(player->window2);
+	player->window2 = NULL;
+
 	pthread_cond_broadcast(&player->cond_queue);
 	pthread_mutex_unlock(&player->mutex_queue);
 }

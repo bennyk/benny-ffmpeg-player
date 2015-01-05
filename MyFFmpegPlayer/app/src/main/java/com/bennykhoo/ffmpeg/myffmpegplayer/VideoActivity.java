@@ -18,10 +18,6 @@
 
 package com.bennykhoo.ffmpeg.myffmpegplayer;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Locale;
-
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -38,11 +34,14 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.BaseColumns;
 import android.support.v4.widget.SimpleCursorAdapter;
-import android.view.Surface;
+import android.util.Log;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.TranslateAnimation;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.Button;
@@ -58,13 +57,18 @@ import com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegStreamInfo;
 import com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegStreamInfo.CodecType;
 import com.bennykhoo.ffmpeg.myffmpeglibrary.NotPlayingException;
 
+import java.io.File;
+import java.util.HashMap;
+import java.util.Locale;
+
 public class VideoActivity extends Activity implements OnClickListener,
 		FFmpegListener, OnSeekBarChangeListener, OnItemSelectedListener {
 	
 	private static final String[] PROJECTION = new String[] {"title", BaseColumns._ID};
 	private static final int PROJECTION_ID = 1;
+    private static final String TAG = "VideoActivity";
 
-	private FFmpegPlayer mMpegPlayer;
+    private FFmpegPlayer mMpegPlayer;
 	protected boolean mPlay = false;
 	private View mControlsView;
 	private View mLoadingView;
@@ -84,6 +88,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 	private int mSubtitleStreamNo = FFmpegPlayer.NO_STREAM;
 	private View mScaleButton;
 	private long mCurrentTimeUs;
+    private View mCoverView;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -138,8 +143,8 @@ public class VideoActivity extends Activity implements OnClickListener,
         mMpegPlayer = new FFmpegPlayer(this);
 		mMpegPlayer.setMpegListener(this);
 
-        View surfaceView1 = this.findViewById(R.id.video_view1);
-        View surfaceView2 = this.findViewById(R.id.video_view2);
+        SurfaceView surfaceView1 = (SurfaceView) this.findViewById(R.id.video_view1);
+        SurfaceView surfaceView2 = (SurfaceView) this.findViewById(R.id.video_view2);
 
         mMpegPlayer.attachView((FFmpegDisplay) surfaceView1, FFmpegDisplay.AttachmentSide.LEFT);
         mMpegPlayer.attachView((FFmpegDisplay) surfaceView2, FFmpegDisplay.AttachmentSide.RIGHT);
@@ -147,6 +152,17 @@ public class VideoActivity extends Activity implements OnClickListener,
 
         // container for our multi surface views
         mVideoView = this.findViewById(R.id.video_view);
+
+        mCoverView = this.findViewById(R.id.cover_view);
+        mCoverView.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.i(TAG, "Clicked cover view");
+                if (mPlay) {
+                    toggleControls();
+                }
+            }
+        });
 	}
 
 	@Override
@@ -316,9 +332,85 @@ public class VideoActivity extends Activity implements OnClickListener,
 		} else {
 			mMpegPlayer.resume();
 			displaySystemMenu(true);
+
+            hideControls();
 		}
 		mPlay = !mPlay;
 	}
+
+    public void hideControls() {
+        Log.i(TAG, "hiding controls");
+
+        TranslateAnimation translate1 = new TranslateAnimation(0, 0, 0, this.mControlsView.getHeight());
+        translate1.setDuration(500);
+        translate1.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                mControlsView.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                mControlsView.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+
+
+        this.mControlsView.startAnimation(translate1);
+
+
+        TranslateAnimation translate2 = new TranslateAnimation(0, 0, 0, -this.mStreamsView.getHeight());
+        translate2.setDuration(500);
+        translate2.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                mStreamsView.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                mStreamsView.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+
+        this.mStreamsView.startAnimation(translate2);
+
+//        this.mCoverView.setVisibility(View.VISIBLE);
+    }
+
+    public void exposeControls() {
+        Log.i(TAG, "exposing controls");
+
+        TranslateAnimation translate1 = new TranslateAnimation(0, 0, this.mControlsView.getHeight(), 0);
+        translate1.setDuration(500);
+        mControlsView.setVisibility(View.VISIBLE);
+        this.mControlsView.startAnimation(translate1);
+
+        TranslateAnimation translate2 = new TranslateAnimation(0, 0, -this.mStreamsView.getHeight(), 0);
+        translate2.setDuration(500);
+        this.mStreamsView.setVisibility(View.VISIBLE);
+        this.mStreamsView.startAnimation(translate2);
+
+//        this.mCoverView.setVisibility(View.GONE);
+    }
+
+    public void toggleControls() {
+        if (this.mControlsView.getVisibility() == View.VISIBLE) {
+            hideControls();
+        } else {
+            exposeControls();
+        }
+    }
 
 	@Override
 	public void onFFResume(NotPlayingException result) {

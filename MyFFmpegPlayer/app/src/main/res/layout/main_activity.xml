@@ -11,4 +11,12 @@
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true" />
 
+    <View
+        android:id="@+id/cover_view"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:background="@null"
+        android:visibility="visible"
+        />
+
 </RelativeLayout>

@@ -5,6 +5,35 @@
     android:layout_height="fill_parent" >
 
     <LinearLayout
+        android:id="@+id/video_view"
+        android:visibility="visible"
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent">
+        <com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegSurfaceView
+            android:id="@+id/video_view1"
+            android:layout_weight="0.5"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            />
+
+        <com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegSurfaceView
+            android:id="@+id/video_view2"
+            android:layout_weight="0.5"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/cover_view"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:background="@null"
+        android:visibility="visible"
+        />
+
+    <LinearLayout
         android:id="@+id/streams"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -62,31 +91,6 @@
             android:layout_centerVertical="true"
             android:layout_toRightOf="@+id/scale_type" />
     </RelativeLayout>
-
-    <LinearLayout
-        android:id="@+id/video_view"
-        android:visibility="visible"
-        android:orientation="horizontal"
-        android:layout_above="@+id/controls"
-        android:layout_below="@+id/streams"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent">
-        <com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegSurfaceView
-            android:id="@+id/video_view1"
-            android:layout_weight="0.5"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            />
-
-        <com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegSurfaceView
-            android:id="@+id/video_view2"
-            android:layout_weight="0.5"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            />
-
-    </LinearLayout>
-
 
     <ProgressBar
         android:id="@+id/loading_view"

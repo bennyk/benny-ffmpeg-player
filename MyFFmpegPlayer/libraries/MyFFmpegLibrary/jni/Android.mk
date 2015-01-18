@@ -6,8 +6,12 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := ffmpeg-jni
 
 LOCAL_C_INCLUDES += $(MY_SYSROOT)/include
+
+# ffmpeg private header files
+LOCAL_C_INCLUDES += /Users/bennykhoo/Sources/MyVR/android-ffmpeg-x264/Project/jni/ffmpeg
+
 #LOCAL_LDLIBS += -L$(MY_SYSROOT)/lib -lavcodec -lavformat -lavresample -lavutil -lswresample
-LOCAL_LDLIBS += -L$(MY_SYSROOT)/lib -lavdevice -lavfilter -lavformat -lswscale -lpostproc -lswresample -lavcodec -lavutil -lx264
+LOCAL_LDLIBS += -L$(MY_SYSROOT)/lib -lavdevice -lavfilter -lavformat -lswscale -lpostproc -lswresample -lavcodec -lavutil -lx264 -lrtmp -lssl -lcrypto
 
 LOCAL_LDLIBS += -landroid
 LOCAL_LDLIBS += -llog -ljnigraphics -lz

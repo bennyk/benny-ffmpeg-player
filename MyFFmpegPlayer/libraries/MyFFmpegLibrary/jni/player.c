@@ -728,11 +728,13 @@ enum WaitFuncRet player_wait_for_frame(struct Player *player, int64_t stream_tim
 		int64_t current_video_time = player_get_current_video_time(player);
 
 		LOGI(8,
-				"player_wait_for_frame[%d = %s] = (%f) - (%f)",
+				"player_wait_for_frame[%d = %s] = stream_time (%f) - current_video_time (%f = current_time %lld - start_time %lld)",
 				stream_no,
 				player->video_stream_no == stream_no ? "Video" : "Audio",
 				stream_time/1000000.0,
-				current_video_time/1000000.0);
+				current_video_time/1000000.0,
+				av_gettime(), player->start_time
+				);
 
 		int64_t sleep_time = stream_time - current_video_time;
 
@@ -740,14 +742,15 @@ enum WaitFuncRet player_wait_for_frame(struct Player *player, int64_t stream_tim
 				"player_wait_for_frame[%d] Waiting for frame: sleeping: %" SCNd64,
 				stream_no, sleep_time);
 
-		if (sleep_time < -300000ll) {
-			// 300 ms late
+		if (llabs(sleep_time) > 300000ll) {
+			// 300 ms out of sync - incidentally rtmp protocol published by Adobe also use 300ms default to consider frame as out of sync.
 			int64_t new_value = player->start_time - sleep_time;
 
 			LOGI(4,
-					"player_wait_for_frame[%d] correcting %f to %f because late",
+					"player_wait_for_frame[%d] correcting %f to %f because is too %s",
 					stream_no, (av_gettime() - player->start_time) / 1000000.0,
-					(av_gettime() - new_value) / 1000000.0);
+					(av_gettime() - new_value) / 1000000.0,
+					sleep_time > 0ll ? "early" : "late");
 
 			player->start_time = new_value;
 			pthread_cond_broadcast(&player->cond_queue);
@@ -2598,6 +2601,7 @@ void jni_player_resume(JNIEnv *env, jobject thiz) {
 	player->pause = FALSE;
 
 	int64_t resume_time = av_gettime();
+	LOGI(10, "setting player start_time (%lld) += resume_time (%lld) - pause_time (%lld)", player->start_time, resume_time, player->pause_time);
 	player->start_time += resume_time - player->pause_time;
 
 	pthread_cond_broadcast(&player->cond_queue);

@@ -29,6 +29,7 @@ public class MainActivity extends Activity implements OnItemClickListener {
 		setContentView(R.layout.main_activity);
 		
 		MatrixCursor cursor = new MatrixCursor(MainAdapter.PROJECTION);
+        /*
 		cursor.addRow(new Object[] {
 				1,
 				"Kings Of Leon-Charmer unencrypted",
@@ -99,13 +100,20 @@ public class MainActivity extends Activity implements OnItemClickListener {
 				"ThreeMenInABoatToSayNothingOfTheDog_RUS_eng_1500.mp4.enc",
 				getSDCardFile("airbender/videos/ThreeMenInABoatToSayNothingOfTheDog_RUS_eng_1500.mp4.enc"),
 				"fNFyiU34+Pw4iU6QqazxUZ/+pUMWXQTq" });
+				*/
+
         cursor.addRow(new Object[] {
-                15,
+                1,
+                "Test RTMP stream",
+                "rtmp://10.0.1.7:1935/live/test",
+                null });
+        cursor.addRow(new Object[] {
+                2,
                 "Asus Demo",
                 "/sdcard/Movies/m_ASUS_Display_Demo.mp4",
                 null });
         cursor.addRow(new Object[] {
-                16,
+                3,
                 "Dawn of the Planet of the Apes",
                 "/sdcard/daa-sample.of.the.release.of.the.daawn.of.the.planet.of.the.rapes-720p.mkv",
                 null });

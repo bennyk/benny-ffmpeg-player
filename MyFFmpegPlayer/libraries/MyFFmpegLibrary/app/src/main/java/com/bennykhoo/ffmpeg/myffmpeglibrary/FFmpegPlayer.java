@@ -384,5 +384,10 @@ public class FFmpegPlayer {
 	public void setMpegListener(FFmpegListener mpegListener) {
 		this.mpegListener = mpegListener;
 	}
-	
+
+    private native void setIPDPxNative(int ipdPx);
+    public void setIPDPx(int ipdPx) {
+        setIPDPxNative(ipdPx);
+    }
+
 }

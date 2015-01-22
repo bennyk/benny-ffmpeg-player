@@ -34,6 +34,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.BaseColumns;
 import android.support.v4.widget.SimpleCursorAdapter;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
@@ -57,7 +58,13 @@ import com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegStreamInfo;
 import com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegStreamInfo.CodecType;
 import com.bennykhoo.ffmpeg.myffmpeglibrary.NotPlayingException;
 
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Locale;
 
@@ -504,5 +511,67 @@ public class VideoActivity extends Activity implements OnClickListener,
 		// }
 		// play();
 	}
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+
+        // restore from setting file when views are stable and sized properly.
+        parseSettings();
+    }
+
+    public void parseSettings() {
+
+        String data = null;
+        if (getIPDConfigFile().exists()) {
+            try {
+                data = getStringFromFile(getIPDConfigFile());
+                JSONObject json = new JSONObject(data);
+                Double ipdMM = json.getDouble("ipdMM");
+
+                DisplayMetrics metrics = getResources().getDisplayMetrics();
+                int ipdPX = (int) Math.round(ipdMM * metrics.xdpi / 25.4f); // * 2 for both side
+
+                Log.d(TAG, "parsed IPD values: " + ipdMM + " mm " + ipdPX + "px");
+
+                SurfaceView surfaceView1 = (SurfaceView) this.findViewById(R.id.video_view1);
+                Log.d(TAG, "surface view1 width = " + surfaceView1.getWidth());
+
+                mMpegPlayer.setIPDPx(ipdPX);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private File getIPDConfigFile() {
+        File path = Environment.getExternalStorageDirectory();
+        path.mkdirs();
+        File file = new File(path, "ipd.conf");
+        return file;
+    }
+
+    public static String convertStreamToString(InputStream is) throws Exception {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        StringBuilder sb = new StringBuilder();
+        String line = null;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line).append("\n");
+        }
+        reader.close();
+        return sb.toString();
+    }
+
+    public static String getStringFromFile (File file) throws Exception {
+        FileInputStream fin = new FileInputStream(file);
+        String ret = convertStreamToString(fin);
+        //Make sure you close all streams.
+        fin.close();
+        return ret;
+    }
+
+
+
 
 }

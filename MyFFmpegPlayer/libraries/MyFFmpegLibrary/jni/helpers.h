@@ -19,6 +19,8 @@
 #ifndef HELPERS_H_
 #define HELPERS_H_
 
+#include <stdint.h>
+
 typedef struct {
     const char* name;
     const char* signature;
@@ -32,5 +34,7 @@ typedef struct {
 jfieldID java_get_field(JNIEnv *env, char * class_name, JavaField field);
 jmethodID java_get_method(JNIEnv *env, jclass class, JavaMethod method);
 
+void argb_crop(const uint8_t *src, int src_stride, int width, int height,
+		int x, int y, int w, int h, uint8_t *dst);
 
 #endif /* HELPERS_H_ */

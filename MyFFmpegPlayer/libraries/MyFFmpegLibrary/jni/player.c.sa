@@ -241,9 +241,6 @@ struct Player {
 	int64_t start_time;
 	int64_t pause_time;
 
-	// Pixel offset from center of frame due to IPD.
-	int ipd_offset;
-
 #ifdef SUBTITLES
 	int subtitle_stream_no;
 	ASS_Library * ass_library;
@@ -731,13 +728,11 @@ enum WaitFuncRet player_wait_for_frame(struct Player *player, int64_t stream_tim
 		int64_t current_video_time = player_get_current_video_time(player);
 
 		LOGI(8,
-				"player_wait_for_frame[%d = %s] = stream_time (%f) - current_video_time (%f = current_time %lld - start_time %lld)",
+				"player_wait_for_frame[%d = %s] = (%f) - (%f)",
 				stream_no,
 				player->video_stream_no == stream_no ? "Video" : "Audio",
 				stream_time/1000000.0,
-				current_video_time/1000000.0,
-				av_gettime(), player->start_time
-				);
+				current_video_time/1000000.0);
 
 		int64_t sleep_time = stream_time - current_video_time;
 
@@ -745,15 +740,14 @@ enum WaitFuncRet player_wait_for_frame(struct Player *player, int64_t stream_tim
 				"player_wait_for_frame[%d] Waiting for frame: sleeping: %" SCNd64,
 				stream_no, sleep_time);
 
-		if (llabs(sleep_time) > 300000ll) {
-			// 300 ms out of sync - incidentally rtmp protocol published by Adobe also use 300ms default to consider frame as out of sync.
+		if (sleep_time < -300000ll) {
+			// 300 ms late
 			int64_t new_value = player->start_time - sleep_time;
 
 			LOGI(4,
-					"player_wait_for_frame[%d] correcting %f to %f because is too %s",
+					"player_wait_for_frame[%d] correcting %f to %f because late",
 					stream_no, (av_gettime() - player->start_time) / 1000000.0,
-					(av_gettime() - new_value) / 1000000.0,
-					sleep_time > 0ll ? "early" : "late");
+					(av_gettime() - new_value) / 1000000.0);
 
 			player->start_time = new_value;
 			pthread_cond_broadcast(&player->cond_queue);
@@ -800,9 +794,6 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 	ANativeWindow_Buffer buffer1, buffer2;
 	ANativeWindow * window1, * window2;
 
-	// TODO may need to remove this hard-code in future.
-	int sbs_mode = TRUE;
-
 #ifdef MEASURE_TIME
 	struct timespec timespec1, timespec2, diff;
 #endif // MEASURE_TIME
@@ -839,16 +830,9 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 
 	pthread_mutex_lock(&player->mutex_queue);
 
-	if (sbs_mode) {
-		if (player->window1 == NULL || player->window2 == NULL) {
-			LOGE(1, "player_decode_video missing windows!\n");
-			return -ERROR_WHILE_DECODING_VIDEO;
-		}
-	} else {
-		if (player->window1 == NULL) {
-			LOGE(1, "player_decode_video missing windows!\n");
-			return -ERROR_WHILE_DECODING_VIDEO;
-		}
+	if (player->window1 == NULL || player->window2 == NULL) {
+		LOGE(1, "player_decode_video missing windows!\n");
+		return -ERROR_WHILE_DECODING_VIDEO;
 	}
 
 	window1 = player->window1;
@@ -857,29 +841,19 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 		goto skip_frame;
 	}
 
-	if (sbs_mode) {
-		ANativeWindow_setBuffersGeometry(window1, ctx->width/2, ctx->height,
-				WINDOW_FORMAT_RGBA_8888);
-		if (ANativeWindow_lock(window1, &buffer1, NULL) != 0) {
-			pthread_mutex_unlock(&player->mutex_queue);
-			goto skip_frame;
-		}
-
-		window2 = player->window2;
-		ANativeWindow_setBuffersGeometry(window2, ctx->width/2, ctx->height,
-				WINDOW_FORMAT_RGBA_8888);
-		if (ANativeWindow_lock(window2, &buffer2, NULL) != 0) {
-			pthread_mutex_unlock(&player->mutex_queue);
-			goto skip_frame;
-		}
+	ANativeWindow_setBuffersGeometry(window1, ctx->width/2, ctx->height,
+			WINDOW_FORMAT_RGBA_8888);
+	if (ANativeWindow_lock(window1, &buffer1, NULL) != 0) {
+		pthread_mutex_unlock(&player->mutex_queue);
+		goto skip_frame;
 	}
-	else {
-		ANativeWindow_setBuffersGeometry(window1, ctx->width, ctx->height,
-				WINDOW_FORMAT_RGBA_8888);
-		if (ANativeWindow_lock(window1, &buffer1, NULL) != 0) {
-			pthread_mutex_unlock(&player->mutex_queue);
-			goto skip_frame;
-		}
+
+	window2 = player->window2;
+	ANativeWindow_setBuffersGeometry(window2, ctx->width/2, ctx->height,
+			WINDOW_FORMAT_RGBA_8888);
+	if (ANativeWindow_lock(window2, &buffer2, NULL) != 0) {
+		pthread_mutex_unlock(&player->mutex_queue);
+		goto skip_frame;
 	}
 	pthread_mutex_unlock(&player->mutex_queue);
 
@@ -928,11 +902,10 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 	AVFrame * out_frame;
 	int rescale;
 	if (ctx->width == buffer1.width && ctx->height == buffer1.height) {
-		// This always should be true when in non stereoscopic mode.
+		// This always should be true
 		out_frame = rgb_frame;
 		rescale = FALSE;
 	} else {
-		// This is always true for stereoscopic mode.
 		out_frame = player->tmp_frame2;
 		rescale = TRUE;
 	}
@@ -963,38 +936,20 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 				out_frame->linesize);
 	}
 
-	if (sbs_mode) {
-
-		// ipd adjustment from center of frame
-		int offset = player->ipd_offset;
-
-		LOGI(8, "cropping left frame to %d:%d:%d:%d", ctx->width/4 - offset, 0, buffer1.stride, buffer1.height);
-		argb_crop(out_frame->data[0], out_frame->linesize[0], ctx->width, ctx->height,
-				ctx->width/4 - offset, 0, buffer1.stride, buffer1.height, rgb_frame->data[0]);
-
-		// connect rgb_frame bitmap to surface2
-		AVPicture rgb_frame2;
-		avpicture_fill(&rgb_frame2, buffer2.bits, out_format,
-				buffer2.width, buffer2.height);
-		rgb_frame2.linesize[0] = buffer2.stride * 4;
-
-		LOGI(8, "cropping right frame to %d:%d:%d:%d", ctx->width/4 + offset, 0, buffer2.stride, buffer2.height);
-		argb_crop(out_frame->data[0], out_frame->linesize[0], ctx->width, ctx->height,
-				ctx->width/4 + offset, 0, buffer2.stride, buffer2.height, rgb_frame2.data[0]);
-
-		// TODO out_frame for subtitle has not been supported.
-		out_frame = NULL;
-
-	} else {
-		if (rescale) {
-			// Never occurs
-			__ARGBScale(out_frame->data[0], out_frame->linesize[0], ctx->width,
-					ctx->height, rgb_frame->data[0], rgb_frame->linesize[0],
-					buffer1.width, buffer1.height, __kFilterNone);
-			out_frame = rgb_frame;
-		}
+	if (rescale) {
+		// Never occurs
+		__ARGBScale(out_frame->data[0], out_frame->linesize[0], ctx->width,
+				ctx->height, rgb_frame->data[0], rgb_frame->linesize[0],
+				buffer1.width, buffer1.height, __kFilterNone);
+		out_frame = rgb_frame;
 	}
 
+	// duplicate rgb_frame bitmap to surface2
+	AVPicture rgb_frame2;
+	avpicture_fill(&rgb_frame2, buffer2.bits, out_format,
+				buffer2.width, buffer2.height);
+	rgb_frame2.linesize[0] = buffer2.stride * 4;
+	av_picture_copy(&rgb_frame2, rgb_frame, out_format, buffer2.width, buffer2.height);
 
 	//int64_t pts = av_frame_get_best_effort_timestamp(frame);
 	int64_t pts = frame->best_effort_timestamp;
@@ -1005,7 +960,7 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 	LOGI(10,
 			"player_decode_video Decoded video frame: %f, time_base: %" SCNd64,
 			time/1000000.0, pts);
-	player_wait_for_frame(player, time, stream_no);
+//	player_wait_for_frame(player, time, stream_no);
 
 
 #ifdef SUBTITLES
@@ -1530,11 +1485,11 @@ int player_write_audio(struct DecoderData *decoder_data, JNIEnv *env,
 		player->audio_clock += sample_time;
 		LOGI(9, "player_write_audio - added")
 	}
-	enum WaitFuncRet wait_ret = player_wait_for_frame(player,
-			player->audio_clock + AUDIO_TIME_ADJUST_US, stream_no);
-	if (wait_ret == WAIT_FUNC_RET_SKIP) {
-		goto end;
-	}
+//	enum WaitFuncRet wait_ret = player_wait_for_frame(player,
+//			player->audio_clock + AUDIO_TIME_ADJUST_US, stream_no);
+//	if (wait_ret == WAIT_FUNC_RET_SKIP) {
+//		goto end;
+//	}
 
 	LOGI(10, "player_write_audio Writing sample data")
 
@@ -2643,7 +2598,6 @@ void jni_player_resume(JNIEnv *env, jobject thiz) {
 	player->pause = FALSE;
 
 	int64_t resume_time = av_gettime();
-	LOGI(10, "setting player start_time (%lld) += resume_time (%lld) - pause_time (%lld)", player->start_time, resume_time, player->pause_time);
 	player->start_time += resume_time - player->pause_time;
 
 	pthread_cond_broadcast(&player->cond_queue);
@@ -3018,14 +2972,6 @@ void jni_player_render_frame_stop(JNIEnv *env, jobject thiz) {
 	player->window2 = NULL;
 
 	pthread_cond_broadcast(&player->cond_queue);
-	pthread_mutex_unlock(&player->mutex_queue);
-}
-
-void jni_player_set_ipd_pixels(JNIEnv *env, jobject thiz, int ipdPx) {
-	struct Player *player = player_get_player_field(env, thiz);
-	pthread_mutex_lock(&player->mutex_queue);
-	player->ipd_offset = ANativeWindow_getWidth(player->window1) / 2 - ipdPx / 2;
-	LOGI(1, "jni_player_set_ipd_pixels setting IPD offset to %d = %d (surface width) / 2 - %d (ipdPx) / 2", player->ipd_offset, ANativeWindow_getWidth(player->window1), ipdPx);
 	pthread_mutex_unlock(&player->mutex_queue);
 }
 

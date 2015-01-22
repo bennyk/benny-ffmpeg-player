@@ -118,6 +118,18 @@ public class MainActivity extends Activity implements OnItemClickListener {
                 "/sdcard/daa-sample.of.the.release.of.the.daawn.of.the.planet.of.the.rapes-720p.mkv",
                 null });
 
+        cursor.addRow(new Object[] {
+                4,
+                "Fury 2014",
+                "/sdcard/fury.2014.720p.bluray.x264-sparks.sample.mkv",
+                null });
+
+        cursor.addRow(new Object[] {
+                4,
+                "Roller Coaster",
+                "/sdcard/roller-coaster.mp4",
+                null });
+
         mAdapter = new MainAdapter(this);
 		mAdapter.swapCursor(cursor);
 

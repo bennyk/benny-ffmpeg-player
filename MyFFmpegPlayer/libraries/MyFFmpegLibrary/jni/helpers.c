@@ -17,6 +17,7 @@
  */
 
 #include <jni.h>
+#include <string.h>
 
 #include "helpers.h"
 
@@ -29,4 +30,17 @@ jfieldID java_get_field(JNIEnv *env, char * class_name, JavaField field) {
 
 jmethodID java_get_method(JNIEnv *env, jclass class, JavaMethod method) {
 	return (*env)->GetMethodID(env, class, method.name, method.signature);
+}
+
+void argb_crop(const uint8_t *src, int src_stride, int width, int height,
+		int x, int y, int w, int h, uint8_t *dst)
+{
+	int j;
+	int dst_stride = w * 4;
+	src += y * src_stride + x * 4;
+	for (j = 0; j < h; j++) {
+		memcpy(dst, src, dst_stride);
+		src += src_stride;
+		dst += dst_stride;
+	}
 }

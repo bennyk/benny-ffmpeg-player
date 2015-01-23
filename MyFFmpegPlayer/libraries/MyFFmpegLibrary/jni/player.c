@@ -191,6 +191,7 @@ struct Player {
 	AVIOInterruptCB interrupt_callback;
 
 	int interrupt;
+	int stopped;
 
 	pthread_mutex_t mutex_operation;
 
@@ -2995,6 +2996,10 @@ void jni_player_render_frame_start(JNIEnv *env, jobject thiz) {
 
 void jni_player_render_frame_stop(JNIEnv *env, jobject thiz) {
 	struct Player * player = player_get_player_field(env, thiz);
+	if (player->stopped) {
+		LOGI(10, "player already stopped");
+		return;
+	}
 
 	struct State state = {player: player, env: env};
 
@@ -3019,6 +3024,8 @@ void jni_player_render_frame_stop(JNIEnv *env, jobject thiz) {
 
 	pthread_cond_broadcast(&player->cond_queue);
 	pthread_mutex_unlock(&player->mutex_queue);
+
+	player->stopped = TRUE;
 }
 
 void jni_player_set_ipd_pixels(JNIEnv *env, jobject thiz, int ipdPx) {

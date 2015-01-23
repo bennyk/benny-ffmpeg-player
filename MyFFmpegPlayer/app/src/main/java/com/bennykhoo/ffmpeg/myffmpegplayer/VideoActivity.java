@@ -516,8 +516,10 @@ public class VideoActivity extends Activity implements OnClickListener,
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
 
-        // restore from setting file when views are stable and sized properly.
-        parseSettings();
+        if (hasFocus) {
+            // restore from setting file when views are stable and sized properly.
+            parseSettings();
+        }
     }
 
     public void parseSettings() {

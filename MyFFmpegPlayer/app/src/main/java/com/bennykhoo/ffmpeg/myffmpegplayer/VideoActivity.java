@@ -32,10 +32,12 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Vibrator;
 import android.provider.BaseColumns;
 import android.support.v4.widget.SimpleCursorAdapter;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -74,6 +76,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 	private static final String[] PROJECTION = new String[] {"title", BaseColumns._ID};
 	private static final int PROJECTION_ID = 1;
     private static final String TAG = "VideoActivity";
+    private static final int IPD_TICK = 10;
 
     private FFmpegPlayer mMpegPlayer;
 	protected boolean mPlay = false;
@@ -96,8 +99,13 @@ public class VideoActivity extends Activity implements OnClickListener,
 	private View mScaleButton;
 	private long mCurrentTimeUs;
     private View mCoverView;
-	
-	@Override
+
+    private static final int KEY_UP = 19;
+    private static final int KEY_DOWN = 20;
+    private int _ipdDelta = 0;
+    private int _ipdPX;
+
+    @Override
 	public void onCreate(Bundle savedInstanceState) {
 		this.getWindow().requestFeature(Window.FEATURE_NO_TITLE);
 		getWindow().setFormat(PixelFormat.RGBA_8888);
@@ -532,14 +540,14 @@ public class VideoActivity extends Activity implements OnClickListener,
                 Double ipdMM = json.getDouble("ipdMM");
 
                 DisplayMetrics metrics = getResources().getDisplayMetrics();
-                int ipdPX = (int) Math.round(ipdMM * metrics.xdpi / 25.4f); // * 2 for both side
+                _ipdPX = (int) Math.round(ipdMM * metrics.xdpi / 25.4f); // * 2 for both side
 
-                Log.d(TAG, "parsed IPD values: " + ipdMM + " mm " + ipdPX + "px");
+                Log.d(TAG, "parsed IPD values: " + ipdMM + " mm " + _ipdPX + "px");
 
                 SurfaceView surfaceView1 = (SurfaceView) this.findViewById(R.id.video_view1);
                 Log.d(TAG, "surface view1 width = " + surfaceView1.getWidth());
 
-                mMpegPlayer.setIPDPx(ipdPX);
+                mMpegPlayer.setIPDPx(_ipdPX);
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -572,6 +580,36 @@ public class VideoActivity extends Activity implements OnClickListener,
         fin.close();
         return ret;
     }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+
+        boolean flag = false;
+
+        Log.d(TAG, "keyDown " + keyCode);
+        switch (keyCode) {
+            case KEY_DOWN:
+                flag = true;
+                _ipdDelta += -IPD_TICK;
+                break;
+            case KEY_UP:
+                flag = true;
+                _ipdDelta += IPD_TICK;
+                break;
+
+            default:
+                Vibrator v = (Vibrator) getSystemService(getApplicationContext().VIBRATOR_SERVICE);
+                v.vibrate(50);
+
+        }
+
+        if (flag) {
+            mMpegPlayer.setIPDPx(_ipdPX + _ipdDelta);
+        }
+
+        return super.onKeyDown(keyCode, event);
+    }
+
 
 
 

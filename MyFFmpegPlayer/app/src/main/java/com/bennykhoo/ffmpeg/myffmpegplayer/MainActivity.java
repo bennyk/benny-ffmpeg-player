@@ -2,15 +2,16 @@ package com.bennykhoo.ffmpeg.myffmpegplayer;
 
 import java.io.File;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.widget.CursorAdapter;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -18,9 +19,13 @@ import android.widget.ListView;
 
 import com.bennykhoo.ffmpeg.myffmpegplayer.adapter.MainAdapter;
 
-public class MainActivity extends Activity implements OnItemClickListener {
+public class MainActivity extends ActionBarActivity implements OnItemClickListener {
 
-	private ListView mListView;
+    private static final String TAG = "MainActivity";
+    private static final String CONNECT_DIALOG_TAG = "ConnectDialogTag";
+    public static final String PREFS_NAME = "MyPrefsDB";
+
+    private ListView mListView;
 	private CursorAdapter mAdapter;
 
 	@Override
@@ -148,8 +153,8 @@ public class MainActivity extends Activity implements OnItemClickListener {
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		getMenuInflater().inflate(R.menu.main_activity, menu);
-		return true;
+		getMenuInflater().inflate(R.menu.main_activity_actions, menu);
+		return super.onCreateOptionsMenu(menu);
 	}
 
 	@Override
@@ -165,4 +170,16 @@ public class MainActivity extends Activity implements OnItemClickListener {
 		startActivity(intent);
 	}
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_connect:
+                ConnectDialogFragment dlg = new ConnectDialogFragment();
+                dlg.show(getFragmentManager(), CONNECT_DIALOG_TAG);
+                break;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+        return super.onOptionsItemSelected(item);
+    }
 }

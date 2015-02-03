@@ -23,7 +23,6 @@
     <application
         android:allowBackup="true"
         android:hardwareAccelerated="true"
-        android:debuggable="true"
         android:label="@string/app_name" >
         <activity
             android:name="com.bennykhoo.ffmpeg.myffmpegplayer.MainActivity"

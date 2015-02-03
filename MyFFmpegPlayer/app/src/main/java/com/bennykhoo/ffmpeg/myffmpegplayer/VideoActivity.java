@@ -172,10 +172,7 @@ public class VideoActivity extends Activity implements OnClickListener,
         mCoverView.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.i(TAG, "Clicked cover view");
-                if (mPlay) {
-                    toggleControls();
-                }
+                toggleControls();
             }
         });
 	}

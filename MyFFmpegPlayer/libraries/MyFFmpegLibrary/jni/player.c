@@ -473,7 +473,7 @@ int player_decode_audio(struct DecoderData * decoder_data, JNIEnv * env,
 	int err;
 	if ((err = player_write_audio(decoder_data, env, pts, audio_buf, data_size,
 			original_data_size))) {
-		LOGE(1, "Could not write frame");
+		LOGE(1, "Could not write frame (errno: %d)", err);
 		return err;
 	}
 	return 0;
@@ -838,7 +838,6 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec1);
 #endif // MEASURE_TIME
 
-	pthread_mutex_lock(&player->mutex_queue);
 
 	if (sbs_mode) {
 		if (player->window1 == NULL || player->window2 == NULL) {
@@ -854,7 +853,6 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 
 	window1 = player->window1;
 	if (window1 == NULL) {
-		pthread_mutex_unlock(&player->mutex_queue);
 		goto skip_frame;
 	}
 
@@ -862,7 +860,6 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 		ANativeWindow_setBuffersGeometry(window1, ctx->width/2, ctx->height,
 				WINDOW_FORMAT_RGBA_8888);
 		if (ANativeWindow_lock(window1, &buffer1, NULL) != 0) {
-			pthread_mutex_unlock(&player->mutex_queue);
 			goto skip_frame;
 		}
 
@@ -870,7 +867,6 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 		ANativeWindow_setBuffersGeometry(window2, ctx->width/2, ctx->height,
 				WINDOW_FORMAT_RGBA_8888);
 		if (ANativeWindow_lock(window2, &buffer2, NULL) != 0) {
-			pthread_mutex_unlock(&player->mutex_queue);
 			goto skip_frame;
 		}
 	}
@@ -878,12 +874,9 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 		ANativeWindow_setBuffersGeometry(window1, ctx->width, ctx->height,
 				WINDOW_FORMAT_RGBA_8888);
 		if (ANativeWindow_lock(window1, &buffer1, NULL) != 0) {
-			pthread_mutex_unlock(&player->mutex_queue);
 			goto skip_frame;
 		}
 	}
-	pthread_mutex_unlock(&player->mutex_queue);
-
 	int format = buffer1.format;
 	if (format < 0) {
 		LOGE(1, "Could not get window format")
@@ -1097,7 +1090,25 @@ skip_frame:
 	return err;
 }
 
+void player_decoder_thread_cleanup(void *arg)
+{
+	struct DecoderData *decoder_data = arg;
+	struct Player *player = decoder_data->player;
+	int stream_no = decoder_data->stream_no;
+
+	LOGI(8, "decoder thread clean-up %d", decoder_data->stream_no);
+
+	// reset flag
+	player->decode_threads_created[stream_no] = FALSE;
+
+	free(decoder_data);
+	decoder_data = NULL;
+}
+
 void * player_decode(void * data) {
+
+	// set clean-up handler
+	pthread_cleanup_push(player_decoder_thread_cleanup, data);
 
 	int err = ERROR_NO_ERROR;
 	struct DecoderData *decoder_data = data;
@@ -1244,8 +1255,10 @@ void * player_decode(void * data) {
 	if (ret && !err)
 		err = ERROR_COULD_NOT_DETACH_THREAD;
 
-	end: free(decoder_data);
-	decoder_data = NULL;
+	end:
+	LOGI(2, "player_decode exiting decoder thread: %d", stream_no);
+
+	pthread_cleanup_pop(1);
 
 	// TODO do something with err
 	return NULL;
@@ -1411,7 +1424,14 @@ void * player_read_from_stream(void *data) {
 		av_free_packet(pkt);
 
 		//request stream to stop
-		player_assign_to_no_boolean_array(player, player->stop_streams, TRUE);
+		for (stream_no = 0; stream_no < player->caputre_streams_no; ++stream_no) {
+			if (player->decode_threads_created[stream_no] == TRUE) {
+				LOGI(10, "player_read_from_stream requesting decoder thread %d to stop.", stream_no);
+				player->stop_streams[stream_no] = TRUE;
+			} else {
+				LOGI(10, "player_read_from_stream decoder thread %d already exited.", stream_no);
+			}
+		}
 		pthread_cond_broadcast(&player->cond_queue);
 
 		// wait for all stream stop
@@ -1497,6 +1517,8 @@ void * player_read_from_stream(void *data) {
 		err = ERROR_COULD_NOT_DETACH_THREAD;
 
 	end:
+
+	LOGI(3, "player_read_from_stream exiting reader thread");
 
 	// TODO do something with error valuse
 	return NULL;

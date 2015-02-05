@@ -762,6 +762,7 @@ enum WaitFuncRet player_wait_for_frame(struct Player *player, int64_t stream_tim
 
 		if (sleep_time <= MIN_SLEEP_TIME_US) {
 			// We do not need to wait if time is slower then minimal sleep time
+			LOGI(9, "player_wait_for_frame[%d] is %d µs late", stream_no, sleep_time);
 			break;
 		}
 
@@ -2231,6 +2232,7 @@ void player_find_stream_info_free(struct Player *player) {
 int player_find_stream_info(struct Player *player) {
 	LOGI(3, "player_set_data_source 2");
 	// find video informations
+	player->input_format_ctx->max_analyze_duration = 10*AV_TIME_BASE;
 	if (avformat_find_stream_info(player->input_format_ctx, NULL) < 0) {
 		LOGE(1, "Could not open stream\n");
 		return -ERROR_COULD_NOT_OPEN_STREAM;
@@ -2448,6 +2450,10 @@ int player_set_data_source(struct State *state, const char *file_path,
 	int i;
 
 	pthread_mutex_lock(&player->mutex_operation);
+
+#if LOG_LEVEL >= 9
+	av_log_set_level(AV_LOG_DEBUG);
+#endif
 
 	player_stop_without_lock(state);
 

@@ -189,6 +189,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 
 	@Override
 	protected void onDestroy() {
+        Log.d(TAG, "onDestroy()");
 		super.onDestroy();
 		this.mMpegPlayer.setMpegListener(null);
 		this.mMpegPlayer.stop();

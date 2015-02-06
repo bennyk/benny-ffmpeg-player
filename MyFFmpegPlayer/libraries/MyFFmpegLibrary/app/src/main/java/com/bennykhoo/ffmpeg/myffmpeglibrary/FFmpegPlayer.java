@@ -29,7 +29,7 @@ import android.os.AsyncTask;
 import android.view.Surface;
 
 public class FFmpegPlayer {
-	private static class StopTask extends AsyncTask<Void, Void, Void> {
+    private static class StopTask extends AsyncTask<Void, Void, Void> {
 
 		private final FFmpegPlayer player;
 
@@ -180,6 +180,21 @@ public class FFmpegPlayer {
 
 	}
 
+    private static class RenderFrameStopTask extends AsyncTask<Void, Void, Void> {
+
+        private final FFmpegPlayer player;
+
+        public RenderFrameStopTask(FFmpegPlayer player) {
+            this.player = player;
+        }
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            player.renderFrameStopNative();
+            return null;
+        }
+    }
+
 	static {
 		NativeTester nativeTester = new NativeTester();
 		if (nativeTester.isNeon()) {
@@ -248,7 +263,11 @@ public class FFmpegPlayer {
 
 	native void renderFrameStart();
 
-	native void renderFrameStop();
+    native void renderFrameStopNative();
+
+    void renderFrameStop() {
+        new RenderFrameStopTask(this).execute();
+    }
 
 	private native void seekNative(long positionUs) throws NotPlayingException;
 

@@ -2206,6 +2206,8 @@ void player_open_input_free(struct Player *player) {
 
 int player_open_input(struct Player *player, const char *file_path,
 		AVDictionary *dictionary) {
+
+	LOGI(7, "player_open_input opening %s", file_path);
 	int ret;
 	if ((ret = avformat_open_input(&(player->input_format_ctx), file_path, NULL,
 			&dictionary)) < 0) {
@@ -2406,11 +2408,14 @@ void player_stop_without_lock(struct State * state) {
 }
 
 void player_stop(struct State * state) {
+	LOGW(1, "stopping the player");
 	int ret;
 
 	struct Player * player = state->player;
 
 	pthread_mutex_lock(&player->mutex_interrupt);
+
+	LOGW(1, "player_stop setting interrupt flag.");
 	player->interrupt = TRUE;
 	pthread_mutex_unlock(&player->mutex_interrupt);
 
@@ -2424,6 +2429,8 @@ int player_ctx_interrupt_callback(void *p) {
 	struct Player *player = (struct Player*) p;
 	pthread_mutex_lock(&player->mutex_interrupt);
 	if (player->interrupt) {
+		LOGW(1, "player_ctx_interrupt_callback interrupt received. Aborting avio...");
+
 		// method is interrupt
 		ret = 1;
 	}

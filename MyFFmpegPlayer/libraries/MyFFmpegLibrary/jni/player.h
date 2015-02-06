@@ -147,7 +147,7 @@ static JNINativeMethod player_methods[] = {
 	{"stopNative", "()V", (void*) jni_player_stop},
 
 	{"renderFrameStart", "()V", (void*) jni_player_render_frame_start},
-	{"renderFrameStop", "()V", (void*) jni_player_render_frame_stop},
+	{"renderFrameStopNative", "()V", (void*) jni_player_render_frame_stop},
 
 	{"getVideoDurationNative", "()J", (void*) jni_player_get_video_duration},
 	{"attachSurface1", "(Landroid/view/Surface;)V", (void*) jni_player_attach_surface1},

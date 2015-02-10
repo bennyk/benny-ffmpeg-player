@@ -33,6 +33,7 @@ public class FFmpegPlayer {
     private static final String TAG = "FFmpegPlayer";
     private double mAverageFps = 0.0;
     private double mCurrentFps = 0.0;
+    private int mSkippedFrames = 0;
 
     private static class StopTask extends AsyncTask<Void, Void, Void> {
 
@@ -235,7 +236,7 @@ public class FFmpegPlayer {
         @Override
         public void run() {
             if (mpegListener != null) {
-                mpegListener.onFFUpdateFps(mAverageFps, mCurrentFps);
+                mpegListener.onFFUpdateFps(mAverageFps, mCurrentFps, mSkippedFrames);
             }
         }
     };
@@ -350,10 +351,11 @@ public class FFmpegPlayer {
 		activity.runOnUiThread(updateTimeRunnable);
 	}
 
-    private void onUpdateFps(double avgFps, double currentFps) {
+    private void onUpdateFps(double avgFps, double currentFps, int skippedFrames) {
 //        Log.d(TAG, "received fps update: " + avgFps + " " + currentFps);
         this.mAverageFps = avgFps;
         this.mCurrentFps = currentFps;
+        this.mSkippedFrames = skippedFrames;
         activity.runOnUiThread(updateFpsRunnable);
     }
 

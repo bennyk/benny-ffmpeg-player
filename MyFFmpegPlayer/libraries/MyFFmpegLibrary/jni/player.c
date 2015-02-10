@@ -248,6 +248,7 @@ struct Player {
 	int ipd_offset;
 
 	fpsCounter *fpsCounter;
+	int skipped_frames;
 
 #ifdef SUBTITLES
 	int subtitle_stream_no;
@@ -437,7 +438,8 @@ int player_decode_audio(struct DecoderData * decoder_data, JNIEnv * env,
 
 	if (len < 0) {
 		LOGE(1, "Fail decoding audio %d\n", len);
-		return -ERROR_WHILE_DECODING_VIDEO;
+//		return -ERROR_WHILE_DECODING_VIDEO;
+		goto skip_frame;
 	}
 	if (!got_frame_ptr) {
 		LOGI(10, "player_decode_audio Audio frame not finished\n");
@@ -460,7 +462,8 @@ int player_decode_audio(struct DecoderData * decoder_data, JNIEnv * env,
 				frame->data, frame->nb_samples);
 		if (len2 < 0) {
 			LOGE(1, "Could not resample frame");
-			return -ERROR_COULD_NOT_RESAMPLE_FRAME;
+//			return -ERROR_COULD_NOT_RESAMPLE_FRAME;
+			goto skip_frame;
 		}
 		if (len2 == sizeof(player->audio_buf2) / sample_per_buffer_divider) {
 			LOGI(1, "warning: audio buffer is probably too small\n");
@@ -479,8 +482,14 @@ int player_decode_audio(struct DecoderData * decoder_data, JNIEnv * env,
 	if ((err = player_write_audio(decoder_data, env, pts, audio_buf, data_size,
 			original_data_size))) {
 		LOGE(1, "Could not write frame (errno: %d)", err);
-		return err;
+//		return err;
+		goto skip_frame;
 	}
+
+	return 0;
+
+skip_frame:
+	player->skipped_frames++;
 	return 0;
 }
 void player_decode_video_flush(struct DecoderData * decoder_data, JNIEnv * env) {
@@ -684,9 +693,9 @@ void player_update_fps(struct State *state)
 	struct Player *player = state->player;
 
 	fpsCounter *counter = player->fpsCounter;
-	LOGI(4, "player_update_fps: %.2f %.2f", counter->averageFps, counter->currentFps);
+	LOGI(4, "player_update_fps: avgFps %.2f currentFps %.2f skipped_frames %d", counter->averageFps, counter->currentFps, player->skipped_frames);
 	(*state->env)->CallVoidMethod(state->env, player->thiz,
-			player->player_on_update_fps_method, counter->averageFps, counter->currentFps);
+			player->player_on_update_fps_method, counter->averageFps, counter->currentFps, player->skipped_frames);
 }
 
 void player_update_time(struct State *state, int is_finished) {
@@ -812,7 +821,6 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 	AVStream * stream = player->input_streams[stream_no];
 	int interrupt_ret;
 	int to_write;
-	int err = 0;
 	AVFrame *rgb_frame = player->rgb_frame;
 	ANativeWindow_Buffer buffer1, buffer2;
 	ANativeWindow * window1, * window2;
@@ -840,7 +848,8 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 
 	if (ret < 0) {
 		LOGE(1, "player_decode_video Fail decoding video %d\n", ret);
-		return -ERROR_WHILE_DECODING_VIDEO;
+		goto skip_frame;
+//		return -ERROR_WHILE_DECODING_VIDEO;
 	}
 	if (!frameFinished) {
 		LOGI(10, "player_decode_video Video frame not finished\n");
@@ -1112,8 +1121,11 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 		}
 	}
 
+	return 0;
+
 skip_frame:
-	return err;
+	player->skipped_frames++;
+	return 0;
 }
 
 void player_decoder_thread_cleanup(void *arg)

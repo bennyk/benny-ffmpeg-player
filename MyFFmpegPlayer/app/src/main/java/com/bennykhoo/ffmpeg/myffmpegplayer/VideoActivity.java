@@ -274,9 +274,14 @@ public class VideoActivity extends Activity implements OnClickListener,
 	}
 
     @Override
-    public void onFFUpdateFps(double averageFps, double currentFps) {
+    public void onFFUpdateFps(double averageFps, double currentFps, int skippedFrames) {
         if (mFpsLabel.getVisibility() == View.VISIBLE) {
-            Formatter formatter = new Formatter().format("c %d a %.2f", Math.round(currentFps), averageFps);
+            Formatter formatter;
+            if (skippedFrames > 0) {
+                formatter = new Formatter().format("c %d a %.2f s %d", Math.round(currentFps), averageFps, skippedFrames);
+            } else {
+                formatter = new Formatter().format("c %d a %.2f", Math.round(currentFps), averageFps);
+            }
             mFpsLabel.setText(formatter.toString());
         }
     }

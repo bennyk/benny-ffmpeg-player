@@ -55,6 +55,7 @@
 #include "jni-protocol.h"
 #include "aes-protocol.h"
 #include "sync.h"
+#include "fps.h"
 
 #define FFMPEG_LOG_LEVEL AV_LOG_WARNING
 #define LOG_LEVEL 2
@@ -244,6 +245,8 @@ struct Player {
 
 	// Pixel offset from center of frame due to IPD.
 	int ipd_offset;
+
+	fpsCounter *fpsCounter;
 
 #ifdef SUBTITLES
 	int subtitle_stream_no;
@@ -1087,6 +1090,10 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 
 	ANativeWindow_unlockAndPost(window1);
 	ANativeWindow_unlockAndPost(window2);
+
+	// increment fps counter
+	computeFps(player->fpsCounter);
+
 skip_frame:
 	return err;
 }
@@ -2249,6 +2256,10 @@ void player_play_prepare_free(struct Player *player) {
 	pthread_mutex_unlock(&player->mutex_queue);
 }
 
+void player_fps_counter_free(struct Player *player) {
+	destroyFpsCounter(&(player->fpsCounter));
+}
+
 void player_play_prepare(struct Player *player) {
 	LOGI(3, "player_set_data_source 16");
 	pthread_mutex_lock(&player->mutex_queue);
@@ -2386,6 +2397,7 @@ void player_stop_without_lock(struct State * state) {
 
 	LOGI(7, "player_stop_without_lock stopping...");
 
+	player_fps_counter_free(player);
 	player_play_prepare_free(player);
 	player_start_decoding_threads_free(player);
 	player_create_audio_track_free(player, state);
@@ -2792,6 +2804,8 @@ int jni_player_init(JNIEnv *env, jobject thiz) {
 	player->subtitle_stream_no = -1;
 #endif // SUBTITLES
 	int err = ERROR_NO_ERROR;
+
+	player->fpsCounter = allocFpsCounter();
 
 	int ret = (*env)->GetJavaVM(env, &player->get_javavm);
 	if (ret) {

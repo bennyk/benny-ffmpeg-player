@@ -31,4 +31,5 @@ public interface FFmpegListener {
 
 	void onFFSeeked(NotPlayingException result);
 
+    void onFFUpdateFps(double averageFps, double currentFps);
 }

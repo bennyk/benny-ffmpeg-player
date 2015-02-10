@@ -26,9 +26,14 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.AsyncTask;
+import android.util.Log;
 import android.view.Surface;
 
 public class FFmpegPlayer {
+    private static final String TAG = "FFmpegPlayer";
+    private double mAverageFps = 0.0;
+    private double mCurrentFps = 0.0;
+
     private static class StopTask extends AsyncTask<Void, Void, Void> {
 
 		private final FFmpegPlayer player;
@@ -226,6 +231,15 @@ public class FFmpegPlayer {
 
 	};
 
+    private Runnable updateFpsRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mpegListener != null) {
+                mpegListener.onFFUpdateFps(mAverageFps, mCurrentFps);
+            }
+        }
+    };
+
 	private long mCurrentTimeUs;
 	private long mVideoDurationUs;
 	private FFmpegStreamInfo[] mStreamsInfos = null;
@@ -335,6 +349,13 @@ public class FFmpegPlayer {
 		this.mIsFinished  = isFinished;
 		activity.runOnUiThread(updateTimeRunnable);
 	}
+
+    private void onUpdateFps(double avgFps, double currentFps) {
+//        Log.d(TAG, "received fps update: " + avgFps + " " + currentFps);
+        this.mAverageFps = avgFps;
+        this.mCurrentFps = currentFps;
+        activity.runOnUiThread(updateFpsRunnable);
+    }
 
 	private AudioTrack prepareAudioTrack(int sampleRateInHz,
 			int numberOfChannels) {

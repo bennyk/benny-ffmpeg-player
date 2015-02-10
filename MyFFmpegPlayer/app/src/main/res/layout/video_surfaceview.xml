@@ -10,6 +10,7 @@
         android:orientation="horizontal"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent">
+
         <com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegSurfaceView
             android:id="@+id/video_view1"
             android:layout_weight="0.5"
@@ -24,6 +25,19 @@
             android:layout_height="fill_parent"
             />
     </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text=""
+        android:id="@+id/fpsLabel"
+        android:background="@android:color/black"
+        android:textColor="@android:color/white"
+        android:textSize="10dp"
+        android:layout_weight="0.5" />
 
     <View
         android:id="@+id/cover_view"

@@ -51,6 +51,7 @@ import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegDisplay;
 import com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegError;
@@ -61,12 +62,14 @@ import com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegStreamInfo.CodecType;
 import com.bennykhoo.ffmpeg.myffmpeglibrary.NotPlayingException;
 
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Formatter;
 import java.util.HashMap;
 import java.util.Locale;
 
@@ -104,6 +107,7 @@ public class VideoActivity extends Activity implements OnClickListener,
     private static final int KEY_DOWN = 20;
     private int _ipdDelta = 0;
     private int _ipdPX;
+    private TextView mFpsLabel;
 
     @Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -175,6 +179,8 @@ public class VideoActivity extends Activity implements OnClickListener,
                 toggleControls();
             }
         });
+
+        mFpsLabel = (TextView) this.findViewById(R.id.fpsLabel);
 	}
 
 	@Override
@@ -267,7 +273,15 @@ public class VideoActivity extends Activity implements OnClickListener,
 		}
 	}
 
-	@Override
+    @Override
+    public void onFFUpdateFps(double averageFps, double currentFps) {
+        if (mFpsLabel.getVisibility() == View.VISIBLE) {
+            Formatter formatter = new Formatter().format("c %d a %.2f", Math.round(currentFps), averageFps);
+            mFpsLabel.setText(formatter.toString());
+        }
+    }
+
+    @Override
 	public void onFFDataSourceLoaded(FFmpegError err, FFmpegStreamInfo[] streams) {
 		if (err != null) {
 			String format = getResources().getString(

@@ -34,13 +34,13 @@ typedef struct {
 	// the number of times the stat has been read
 	long statsCount;
 
-	// the average FPS since the game started
-	double averageFps;
+	// last updated fps and running average fps
+	double averageFps, currentFps;
 
 } fpsCounter;
 
 fpsCounter *allocFpsCounter();
 void destroyFpsCounter(fpsCounter **clock);
-void computeFps(fpsCounter *clock);
+int computeFps(fpsCounter *clock);
 
 #endif

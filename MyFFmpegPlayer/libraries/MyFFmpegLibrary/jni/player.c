@@ -184,6 +184,7 @@ struct Player {
 
 	jmethodID player_prepare_frame_method;
 	jmethodID player_on_update_time_method;
+	jmethodID player_on_update_fps_method;
 	jmethodID player_prepare_audio_track_method;
 	jmethodID player_set_stream_info_method;
 
@@ -274,6 +275,7 @@ enum PlayerErrors {
 	ERROR_NOT_FOUND_PLAYER_CLASS,
 	ERROR_NOT_FOUND_PREPARE_FRAME_METHOD,
 	ERROR_NOT_FOUND_ON_UPDATE_TIME_METHOD,
+	ERROR_NOT_FOUND_ON_UPDATE_FPS_METHOD,
 	ERROR_NOT_FOUND_PREPARE_AUDIO_TRACK_METHOD,
 	ERROR_NOT_FOUND_SET_STREAM_INFO_METHOD,
 	ERROR_NOT_FOUND_M_NATIVE_PLAYER_FIELD,
@@ -675,6 +677,16 @@ void player_update_current_time(struct State *state,
 	(*state->env)->CallVoidMethod(state->env, player->thiz,
 			player->player_on_update_time_method, current_time,
 			video_duration, jis_finished);
+}
+
+void player_update_fps(struct State *state)
+{
+	struct Player *player = state->player;
+
+	fpsCounter *counter = player->fpsCounter;
+	LOGI(4, "player_update_fps: %.2f %.2f", counter->averageFps, counter->currentFps);
+	(*state->env)->CallVoidMethod(state->env, player->thiz,
+			player->player_on_update_fps_method, counter->averageFps, counter->currentFps);
 }
 
 void player_update_time(struct State *state, int is_finished) {
@@ -1092,7 +1104,13 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 	ANativeWindow_unlockAndPost(window2);
 
 	// increment fps counter
-	computeFps(player->fpsCounter);
+	if (player->fpsCounter != NULL) {
+		int updated = computeFps(player->fpsCounter);
+		if (updated != 0) {
+			struct State state = {player: player, env:env};
+			player_update_fps(&state);
+		}
+	}
 
 skip_frame:
 	return err;
@@ -2257,7 +2275,7 @@ void player_play_prepare_free(struct Player *player) {
 }
 
 void player_fps_counter_free(struct Player *player) {
-	destroyFpsCounter(&(player->fpsCounter));
+	destroyFpsCounter(&player->fpsCounter);
 }
 
 void player_play_prepare(struct Player *player) {
@@ -2850,6 +2868,13 @@ int jni_player_init(JNIEnv *env, jobject thiz) {
 				player_class, player_on_update_time);
 		if (player->player_on_update_time_method == NULL) {
 			err = ERROR_NOT_FOUND_ON_UPDATE_TIME_METHOD;
+			goto free_player;
+		}
+
+		player->player_on_update_fps_method = java_get_method(env,
+				player_class, player_on_update_fps);
+		if (player->player_on_update_fps_method == NULL) {
+			err = ERROR_NOT_FOUND_ON_UPDATE_FPS_METHOD;
 			goto free_player;
 		}
 

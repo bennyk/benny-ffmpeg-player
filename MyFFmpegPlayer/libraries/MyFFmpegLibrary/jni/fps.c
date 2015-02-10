@@ -57,7 +57,8 @@ static double computeRunningAverageFps(fpsCounter *counter, double newFps)
 		: ((double)counter->fpsRunningSum/(counter->statsCount));
 }
 
-void computeFps(fpsCounter *counter) {
+int computeFps(fpsCounter *counter) {
+	int status = 0;
 	counter->frameCountPerStatCycle++;
 	counter->totalFrameCount++;
 
@@ -68,9 +69,9 @@ void computeFps(fpsCounter *counter) {
 	if (counter->statusIntervalTimer >= counter->lastStatusStore + STAT_INTERVAL) {
 
 		// calculate the actual frames pers status check interval
-		double actualFps = (double)(counter->frameCountPerStatCycle) / (STAT_INTERVAL / 1000000000LL);
+		counter->currentFps = (double)(counter->frameCountPerStatCycle) / (STAT_INTERVAL / 1000000000LL);
 
-		double avgFps = computeRunningAverageFps(counter, actualFps);
+		counter->averageFps = computeRunningAverageFps(counter, counter->currentFps);
 
 		// saving the number of total frames skipped
 		counter->totalFramesSkipped += counter->framesSkippedPerStatCycle;
@@ -83,7 +84,11 @@ void computeFps(fpsCounter *counter) {
 		counter->statusIntervalTimer = getTimeNsec();
 
 		counter->lastStatusStore = counter->statusIntervalTimer;
-//          Log.d(TAG, "Average FPS:" + df.format(averageFps));
-		LOGI(1, "Average FPS: %.2f Actual FPS: %.2f", avgFps, actualFps);
+//		LOGI(1, "Average FPS: %.2f Current FPS: %.2f", counter->averageFps, counter->currentFps);
+
+		// counter fps updated.
+		status = 1;
 	}
+
+	return status;
 }

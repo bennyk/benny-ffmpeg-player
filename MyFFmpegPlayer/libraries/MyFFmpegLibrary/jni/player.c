@@ -2414,15 +2414,15 @@ int player_alloc_video_frames(struct Player *player) {
 
 void player_alloc_video_frames_free(struct Player *player) {
 	if (player->rgb_frame != NULL) {
-		av_free(&player->rgb_frame);
+		av_free(player->rgb_frame);
 		player->rgb_frame = NULL;
 	}
 	if (player->tmp_frame != NULL) {
-		av_free(&player->tmp_frame);
+		av_free(player->tmp_frame);
 		player->tmp_frame = NULL;
 	}
 	if (player->tmp_frame2 != NULL) {
-		av_free(&player->tmp_frame2);
+		av_free(player->tmp_frame2);
 		player->tmp_frame2 = NULL;
 	}
 	if (player->tmp_buffer != NULL) {

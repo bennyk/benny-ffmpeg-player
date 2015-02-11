@@ -843,7 +843,7 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 #ifdef MEASURE_TIME
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec2);
 	diff = timespec_diff(timespec1, timespec2);
-	LOGI(3, "decode_video timediff: %d.%9ld", diff.tv_sec, diff.tv_nsec);
+	LOGI(1, "MEASURE_TIME avcodec_decode_video2 timediff: %d.%9ld", diff.tv_sec, diff.tv_nsec);
 #endif // MEASURE_TIME
 
 	if (ret < 0) {
@@ -938,7 +938,7 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec2);
 	diff = timespec_diff(timespec1, timespec2);
 	LOGI(1,
-			"lockPixels and fillimage timediff: %d.%9ld", diff.tv_sec, diff.tv_nsec);
+			"MEASURE_TIME lockPixels and fillimage timediff: %d.%9ld", diff.tv_sec, diff.tv_nsec);
 #endif // MEASURE_TIME
 #ifdef MEASURE_TIME
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec1);
@@ -982,6 +982,16 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 				out_frame->linesize);
 	}
 
+#ifdef MEASURE_TIME
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec2);
+	diff = timespec_diff(timespec1, timespec2);
+	LOGI(1,
+			"MEASURE_TIME yuv_color timediff: %d.%9ld", diff.tv_sec, diff.tv_nsec);
+#endif // MEASURE_TIME
+#ifdef MEASURE_TIME
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec1);
+#endif // MEASURE_TIME
+
 	if (sbs_mode) {
 
 		// ipd adjustment from center of frame
@@ -1024,6 +1034,14 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 	LOGI(10,
 			"player_decode_video Decoded video frame: %f, time_base: %" SCNd64,
 			time/1000000.0, pts);
+
+#ifdef MEASURE_TIME
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec2);
+	diff = timespec_diff(timespec1, timespec2);
+	LOGI(1,
+			"MEASURE_TIME cropping timediff: %d.%9ld", diff.tv_sec, diff.tv_nsec);
+#endif // MEASURE_TIME
+
 	player_wait_for_frame(player, time, stream_no);
 
 
@@ -1227,8 +1245,8 @@ void * player_decode(void * data) {
 		}
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec2);
 		struct timespec diff = timespec_diff(timespec1, timespec2);
-		LOGI(7,
-				"decode timediff (%s): %d.%9ld", type, diff.tv_sec, diff.tv_nsec);
+		LOGI(1,
+				"MEASURE_TIME decode %s timediff: %d.%9ld", type, diff.tv_sec, diff.tv_nsec);
 #endif // MEASURE_TIME
 		if (!packet_data->end_of_stream) {
 			av_free_packet(packet_data->packet);

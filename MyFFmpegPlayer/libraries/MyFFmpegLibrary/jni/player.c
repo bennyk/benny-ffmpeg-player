@@ -430,6 +430,11 @@ int player_decode_audio(struct DecoderData * decoder_data, JNIEnv * env,
 	AVCodecContext * ctx = player->input_codec_ctxs[stream_no];
 	AVFrame * frame = player->input_frames[stream_no];
 
+#ifdef MEASURE_TIME
+	struct timespec start_time, end_time, diff;
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_time);
+#endif // MEASURE_TIME
+
 	LOGI(3, "player_decode_audio decoding");
 	AVPacket *packet = packet_data->packet;
 	int len = avcodec_decode_audio4(ctx, frame, &got_frame_ptr, packet);
@@ -485,6 +490,12 @@ int player_decode_audio(struct DecoderData * decoder_data, JNIEnv * env,
 //		return err;
 		goto skip_frame;
 	}
+
+#ifdef MEASURE_TIME
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end_time);
+	diff = timespec_diff(start_time, end_time);
+	LOGI(1, "MEASURE_TIME total decode audio timediff: %d.%9ld", diff.tv_sec, diff.tv_nsec);
+#endif // MEASURE_TIME
 
 	return 0;
 
@@ -829,7 +840,8 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 	int sbs_mode = TRUE;
 
 #ifdef MEASURE_TIME
-	struct timespec timespec1, timespec2, diff;
+	struct timespec start_time, timespec1, timespec2, diff;
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_time);
 #endif // MEASURE_TIME
 	LOGI(10, "player_decode_video decoding");
 	int frameFinished;
@@ -1138,6 +1150,12 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 			player_update_fps(&state);
 		}
 	}
+
+#ifdef MEASURE_TIME
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec2);
+	diff = timespec_diff(start_time, timespec2);
+	LOGI(1, "MEASURE_TIME total decode video timediff: %d.%9ld", diff.tv_sec, diff.tv_nsec);
+#endif // MEASURE_TIME
 
 	return 0;
 

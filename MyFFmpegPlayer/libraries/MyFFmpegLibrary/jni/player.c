@@ -1060,6 +1060,12 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 			"MEASURE_TIME cropping timediff: %d.%9ld", diff.tv_sec, diff.tv_nsec);
 #endif // MEASURE_TIME
 
+#ifdef MEASURE_TIME
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec2);
+	diff = timespec_diff(start_time, timespec2);
+	LOGI(1, "MEASURE_TIME total decode video timediff: %d.%9ld", diff.tv_sec, diff.tv_nsec);
+#endif // MEASURE_TIME
+
 	player_wait_for_frame(player, time, stream_no);
 
 
@@ -1156,12 +1162,6 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 			player_update_fps(&state);
 		}
 	}
-
-#ifdef MEASURE_TIME
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec2);
-	diff = timespec_diff(start_time, timespec2);
-	LOGI(1, "MEASURE_TIME total decode video timediff: %d.%9ld", diff.tv_sec, diff.tv_nsec);
-#endif // MEASURE_TIME
 
 	return 0;
 

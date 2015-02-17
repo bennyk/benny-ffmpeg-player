@@ -154,6 +154,7 @@ struct DecoderData {
 };
 
 #define MAX_STREAMS 3
+#define MAX_AUDIO_FRAME_SIZE 192000
 
 struct Player {
 	JavaVM *get_javavm;
@@ -216,7 +217,7 @@ struct Player {
 	struct SwsContext *sws_context;
 
 	struct SwrContext *swr_context;
-	DECLARE_ALIGNED(16,uint8_t,audio_buf2)[AVCODEC_MAX_AUDIO_FRAME_SIZE * 4];
+	DECLARE_ALIGNED(16,uint8_t,audio_buf2)[MAX_AUDIO_FRAME_SIZE * 4];
 
 	int playing;
 
@@ -429,6 +430,11 @@ int player_decode_audio(struct DecoderData * decoder_data, JNIEnv * env,
 	int stream_no = decoder_data->stream_no;
 	AVCodecContext * ctx = player->input_codec_ctxs[stream_no];
 	AVFrame * frame = player->input_frames[stream_no];
+  
+    if (ctx == 0) {
+        LOGE(1, "null AVCodecContext");
+        goto skip_frame;
+    }
 
 #ifdef MEASURE_TIME
 	struct timespec start_time, end_time, diff;
@@ -1482,7 +1488,7 @@ void * player_read_from_stream(void *data) {
 		packet_data->end_of_stream = FALSE;
 		*packet_data->packet = packet;
 
-		if (av_dup_packet(packet_data->packet) < 0) {
+		if (av_copy_packet(packet_data->packet, pkt) < 0) {
 			err = ERROR_WHILE_DUPLICATING_FRAME;
 			pthread_mutex_lock(&player->mutex_queue);
 			goto exit_loop;
@@ -1709,7 +1715,7 @@ void player_open_stream_free(struct Player *player, int stream_no) {
 
 int player_open_stream(struct Player *player, AVCodecContext * ctx,
 		const struct AVCodec **codec, int stream_no) {
-	enum CodecID codec_id = ctx->codec_id;
+	enum AVCodecID codec_id = ctx->codec_id;
 	LOGI(3, "player_open_stream trying open: %d", codec_id);
 
 	*codec = avcodec_find_decoder(codec_id);
@@ -1955,7 +1961,7 @@ void player_print_video_informations(struct Player *player,
 					!= NULL) {
 				LOGI(3, "--- %s = %s", tag->key, tag->value);
 			}
-			LOGI(3, "-- codec_name: %s", codec->codec_name);
+//          LOGI(3, "-- codec_name: %s", codec->codec_name);
 			char *codec_type = "other";
 			if (codec->codec_type == AVMEDIA_TYPE_AUDIO) {
 				codec_type = "audio";
@@ -1991,7 +1997,7 @@ int player_alloc_frames(struct Player *player) {
 	int capture_streams_no = player->caputre_streams_no;
 	int stream_no;
 	for (stream_no = 0; stream_no < capture_streams_no; ++stream_no) {
-		player->input_frames[stream_no] = avcodec_alloc_frame();
+		player->input_frames[stream_no] = av_frame_alloc();
 		if (player->input_frames[stream_no] == NULL) {
 			return -ERROR_COULD_NOT_ALLOC_FRAME;
 		}
@@ -2307,7 +2313,7 @@ void player_find_stream_info_free(struct Player *player) {
 int player_find_stream_info(struct Player *player) {
 	LOGI(3, "player_set_data_source 2");
 	// find video informations
-	player->input_format_ctx->max_analyze_duration = 10*AV_TIME_BASE;
+	player->input_format_ctx->max_analyze_duration2 = 0; // set to 0 to let avformat choose using a heuristic
 	if (avformat_find_stream_info(player->input_format_ctx, NULL) < 0) {
 		LOGE(1, "Could not open stream\n");
 		return -ERROR_COULD_NOT_OPEN_STREAM;
@@ -2394,18 +2400,18 @@ int player_prepare_ass_decoder(struct Player* player, const char *font_path) {
 
 
 int player_alloc_video_frames(struct Player *player) {
-	player->rgb_frame = avcodec_alloc_frame();
+	player->rgb_frame = av_frame_alloc();
 	if (player->rgb_frame == NULL) {
 		LOGE(1, "player_alloc_video_frames could not allocate rgb_frame");
 		return -1;
 	}
 
-	player->tmp_frame = avcodec_alloc_frame();
+	player->tmp_frame = av_frame_alloc();
 	if (player->tmp_frame == NULL) {
 		LOGE(1, "player_alloc_video_frames could not allocate tmp_frame");
 		return -1;
 	}
-	player->tmp_frame2 = avcodec_alloc_frame();
+	player->tmp_frame2 = av_frame_alloc();
 	if (player->tmp_frame2 == NULL) {
 		LOGE(1, "player_alloc_video_frames could not allocate tmp_frame2");
 		return -1;
@@ -2432,15 +2438,15 @@ int player_alloc_video_frames(struct Player *player) {
 
 void player_alloc_video_frames_free(struct Player *player) {
 	if (player->rgb_frame != NULL) {
-		av_free(player->rgb_frame);
+		av_frame_free(&player->rgb_frame);
 		player->rgb_frame = NULL;
 	}
 	if (player->tmp_frame != NULL) {
-		av_free(player->tmp_frame);
+		av_frame_free(&player->tmp_frame);
 		player->tmp_frame = NULL;
 	}
 	if (player->tmp_frame2 != NULL) {
-		av_free(player->tmp_frame2);
+		av_frame_free(&player->tmp_frame2);
 		player->tmp_frame2 = NULL;
 	}
 	if (player->tmp_buffer != NULL) {

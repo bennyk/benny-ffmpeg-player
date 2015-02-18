@@ -130,9 +130,15 @@ public class MainActivity extends ActionBarActivity implements OnItemClickListen
                 null });
 
         cursor.addRow(new Object[] {
-                4,
+                5,
                 "Roller Coaster",
                 "/sdcard/roller-coaster.mp4",
+                null });
+
+        cursor.addRow(new Object[] {
+                6,
+                "This is EVE",
+                "/sdcard/This is EVE - Uncensored (2014).mp4",
                 null });
 
         mAdapter = new MainAdapter(this);

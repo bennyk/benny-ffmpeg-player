@@ -2,6 +2,7 @@ package com.bennykhoo.ffmpeg.myffmpegplayer;
 
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
@@ -36,6 +37,7 @@ public class MainActivity extends ActionBarActivity implements OnItemClickListen
     public static final String PREFS_NAME = "MyPrefsDB";
 
     private static final int PICKFILE_RESULT_CODE = 123;
+    private static final String PREFS_FIRST_TIME_USE = "MainActivity.firstTimeUse";
 
     private PullToRefreshListView mListView;
 	private CursorAdapter mAdapter;
@@ -75,7 +77,6 @@ public class MainActivity extends ActionBarActivity implements OnItemClickListen
 		mListView.setAdapter(mAdapter);
 		mListView.setOnItemClickListener(this);
         mListView.setTextRefreshing("Scanning for media files...");
-//        mListView.setRefreshing();
 
         mListView.setOnRefreshListener(new PullToRefreshListView.OnRefreshListener() {
             @Override
@@ -144,6 +145,30 @@ public class MainActivity extends ActionBarActivity implements OnItemClickListen
         });
 
         refresh();
+
+        if (isFirstTimeUse()) {
+            mListView.setRefreshing();
+        }
+        setFirstTimeUsed();
+    }
+
+    boolean isFirstTimeUse() {
+        SharedPreferences settings = getSharedPreferences(MainActivity.PREFS_NAME, 0);
+        boolean flag = settings.getBoolean(PREFS_FIRST_TIME_USE, true);
+        return flag;
+    }
+
+    void setFirstTimeUsed() {
+        SharedPreferences settings = getSharedPreferences(MainActivity.PREFS_NAME, 0);
+        SharedPreferences.Editor editor = settings.edit();
+
+        if (isFirstTimeUse()) {
+            editor.putBoolean(PREFS_FIRST_TIME_USE, false);
+        }
+
+        // Commit the edits!
+        editor.commit();
+
     }
 
 	private static String getSDCardFile(String file) {

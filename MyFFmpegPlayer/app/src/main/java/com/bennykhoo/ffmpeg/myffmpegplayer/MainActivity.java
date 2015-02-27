@@ -148,8 +148,8 @@ public class MainActivity extends ActionBarActivity implements OnItemClickListen
 
         if (isFirstTimeUse()) {
             mListView.setRefreshing();
+            setFirstTimeUsed();
         }
-        setFirstTimeUsed();
     }
 
     boolean isFirstTimeUse() {

@@ -11,6 +11,7 @@
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/libraries" />
             <option value="$PROJECT_DIR$/libraries/MyFFmpegLibrary" />
+            <option value="$PROJECT_DIR$/libraries/PullToRefresh-ListView/libraryproject" />
           </set>
         </option>
       </GradleProjectSettings>

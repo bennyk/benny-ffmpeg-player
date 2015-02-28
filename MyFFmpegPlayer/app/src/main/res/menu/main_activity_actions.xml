@@ -5,6 +5,10 @@
         android:icon="@android:drawable/ic_input_add"
         android:title="@string/action_connect"
         app:showAsAction="ifRoom" />
+    <item android:id="@+id/action_adjust"
+        android:icon="@android:drawable/ic_input_add"
+        android:title="@string/action_adjust"
+        app:showAsAction="ifRoom" />
     <!-- Settings, should always be in the overflow -->
     <item android:id="@+id/action_settings"
         android:title="@string/action_settings"

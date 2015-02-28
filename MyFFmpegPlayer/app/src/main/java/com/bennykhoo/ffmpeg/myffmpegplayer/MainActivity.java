@@ -20,6 +20,7 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
 
 import com.bennykhoo.ffmpeg.myffmpegplayer.adapter.MainAdapter;
+import com.bennykhoo.ffmpeg.myffmpegplayer.ipdadjust.IPDAdjustActivity;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -205,6 +206,11 @@ public class MainActivity extends ActionBarActivity implements OnItemClickListen
                 ConnectDialogFragment dlg = new ConnectDialogFragment();
                 dlg.show(getFragmentManager(), CONNECT_DIALOG_TAG);
                 break;
+
+            case R.id.action_adjust:
+                startIPDAdjustActivity();
+                break;
+
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -263,6 +269,11 @@ public class MainActivity extends ActionBarActivity implements OnItemClickListen
     void playUri(Uri uri) {
         Intent intent = new Intent(AppConstants.VIDEO_PLAY_ACTION);
         intent.putExtra(AppConstants.VIDEO_PLAY_ACTION_EXTRA_URL, Uri.decode(uri.toString()));
+        startActivity(intent);
+    }
+
+    private void startIPDAdjustActivity() {
+        Intent intent = new Intent(this, IPDAdjustActivity.class);
         startActivity(intent);
     }
 

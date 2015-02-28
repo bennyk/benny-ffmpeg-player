@@ -35,6 +35,13 @@
             </intent-filter>
         </activity>
         <activity
+            android:name="com.bennykhoo.ffmpeg.myffmpegplayer.ipdadjust.IPDAdjustActivity"
+            android:label="IPD Adjust"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:theme="@style/Theme.AppCompat.NoActionBar" >
+        </activity>
+        <activity
             android:name="com.bennykhoo.ffmpeg.myffmpegplayer.VideoActivity"
             android:exported="true"
             android:hardwareAccelerated="true"

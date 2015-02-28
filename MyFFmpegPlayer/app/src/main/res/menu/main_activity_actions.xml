@@ -2,11 +2,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <!-- Search, should appear as action button -->
     <item android:id="@+id/action_connect"
-        android:icon="@android:drawable/ic_input_add"
+        android:icon="@drawable/ic_action_connect"
         android:title="@string/action_connect"
         app:showAsAction="ifRoom" />
     <item android:id="@+id/action_adjust"
-        android:icon="@android:drawable/ic_input_add"
+        android:icon="@drawable/ic_action_ipd"
         android:title="@string/action_adjust"
         app:showAsAction="ifRoom" />
     <!-- Settings, should always be in the overflow -->

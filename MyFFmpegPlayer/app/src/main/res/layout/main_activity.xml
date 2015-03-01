@@ -4,12 +4,10 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity" >
 
-    <ListView
+    <eu.erikw.PullToRefreshListView
         android:id="@android:id/list"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true" />
+        android:layout_height="fill_parent"
+        android:layout_width="fill_parent" />
 
     <View
         android:id="@+id/cover_view"

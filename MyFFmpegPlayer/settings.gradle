@@ -1,1 +1,4 @@
-include ':app', ':libraries:MyFFmpegLibrary'
+include ':app', ':libraries:MyFFmpegLibrary', ':libraries:PullToRefresh-ListView'
+
+project(':libraries:PullToRefresh-ListView').projectDir = new File('libraries/PullToRefresh-ListView/libraryproject')
+

@@ -1,10 +1,12 @@
 package com.bennykhoo.ffmpeg.myffmpegplayer;
 
-import java.io.File;
-
+import android.content.ContentValues;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.database.MatrixCursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.widget.CursorAdapter;
@@ -18,6 +20,16 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
 
 import com.bennykhoo.ffmpeg.myffmpegplayer.adapter.MainAdapter;
+import com.bennykhoo.ffmpeg.myffmpegplayer.ipdadjust.IPDAdjustActivity;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Set;
+
+import eu.erikw.PullToRefreshListView;
 
 public class MainActivity extends ActionBarActivity implements OnItemClickListener {
 
@@ -25,124 +37,145 @@ public class MainActivity extends ActionBarActivity implements OnItemClickListen
     private static final String CONNECT_DIALOG_TAG = "ConnectDialogTag";
     public static final String PREFS_NAME = "MyPrefsDB";
 
-    private ListView mListView;
+    private static final int PICKFILE_RESULT_CODE = 123;
+    private static final String PREFS_FIRST_TIME_USE = "MainActivity.firstTimeUse";
+
+    private PullToRefreshListView mListView;
 	private CursorAdapter mAdapter;
 
-	@Override
+    private VideoListSQLiteHelper dbHelper;
+    private String[] allColumns = { VideoListSQLiteHelper.COLUMN_ID,
+            VideoListSQLiteHelper.COLUMN_TITLE,
+            VideoListSQLiteHelper.COLUMN_URL,
+            VideoListSQLiteHelper.COLUMN_ENC_KEY };
+
+    // Exhaustive listing of video file extension according to http://en.wikipedia.org/wiki/Video_file_format
+    private static final String[] mediaFileExtensionsArray = new String[] { ".webm", ".mkv", ".flv",
+            // TODO ogg file doesn't play now hmmm...
+            //".ogv", ".ogg", ".ogv",
+            ".drc", ".mng", ".avi", ".mov", ".qt", ".wmv", ".yuv", ".rm", ".rmvb", ".asf", ".mp4", ".m4p", ".m4v", ".mpg", ".mp2", ".mpeg", ".mpe", ".mpv", ".m2v", ".m4v", ".svi", ".3gp", ".3g2", ".mxf", ".roq", ".nsv"
+    };
+    private static Set<String> mediaFileExtensionsHash = new HashSet<String>(Arrays.asList(mediaFileExtensionsArray));
+
+    private static String getLastPathFragment(String fname) {
+        String result = fname;
+        int lastIndex = fname.lastIndexOf("/");
+        if (lastIndex >= 0) {
+            result = fname.substring(lastIndex + 1);
+        }
+        return result;
+    }
+
+    @Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main_activity);
-		
-		MatrixCursor cursor = new MatrixCursor(MainAdapter.PROJECTION);
-        /*
-		cursor.addRow(new Object[] {
-				1,
-				"Kings Of Leon-Charmer unencrypted",
-				getSDCardFile("airbender/videos/Videoguides-Riga_SIL_engrus_1500.mp4"),
-				null });
-		cursor.addRow(new Object[] {
-				2,
-				"TheThreeStooges",
-				"http://192.168.0.200:81/TheThreeStooges_ENGRUS_engjapchi.mp4",
-				null });
-		cursor.addRow(new Object[] {
-				3,
-				"Apple sample",
-				"http://devimages.apple.com.edgekey.net/resources/http-streaming/examples/bipbop_4x3/bipbop_4x3_variant.m3u8",
-				null });
-		cursor.addRow(new Object[] {
-				4,
-				"Apple advenced sample",
-				"https://devimages.apple.com.edgekey.net/resources/http-streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8",
-				null });
-		cursor.addRow(new Object[] {
-				5,
-				"Encrypted file",
-				getSDCardFile("encrypted.mp4"),
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" });
-		cursor.addRow(new Object[] {
-				6,
-				"JWillIAm-CheckItOut_ENG.mp4",
-				getSDCardFile("airbender/videos/WillIAm-CheckItOut_ENG.mp4"),
-				null });
-		cursor.addRow(new Object[] {
-				7,
-				"HungerGamesTrailer1200.mp4",
-				getSDCardFile("airbender/videos/HungerGamesTrailer1200.mp4"),
-				null });
-		cursor.addRow(new Object[] {
-				8,
-				"HungerGamesTrailer800.mp4",
-				getSDCardFile("airbender/videos/HungerGamesTrailer800.mp4"),
-				null });
-		cursor.addRow(new Object[] {
-				9,
-				"TheThreeStooges_ENGRUS_engjapchi.mp4",
-				getSDCardFile("airbender/videos/TheThreeStooges_ENGRUS_engjapchi.mp4"),
-				null });
-		cursor.addRow(new Object[] {
-				10,
-				"Jasmine Sullivan unencrypted",
-				getSDCardFile("airbender/videos/JasmineSullivan-DreamBig_ENG-ENCODESTREAM.mp4"),
-				null });
-		cursor.addRow(new Object[] {
-				11,
-				"Jennifer Hudson unencrypted",
-				getSDCardFile("airbender/videos/JenniferHudson-IfThisIsntLove_ENG-ENCODESTREAM.mp4"),
-				null });
-		cursor.addRow(new Object[] {
-				12,
-				"Kings Of Leon-Charmer unencrypted",
-				getSDCardFile("airbender/videos/KingsOfLeon-Charmer_ENG-ENCODESTREAM.mp4"),
-				null });
-		cursor.addRow(new Object[] {
-				13,
-				"Kings Of Leon-Charmer unencrypted",
-				getSDCardFile("airbender/videos/Lenka-TheShow_ENG-ENCODESTREAM.mp4"),
-				null });
-		cursor.addRow(new Object[] {
-				14,
-				"ThreeMenInABoatToSayNothingOfTheDog_RUS_eng_1500.mp4.enc",
-				getSDCardFile("airbender/videos/ThreeMenInABoatToSayNothingOfTheDog_RUS_eng_1500.mp4.enc"),
-				"fNFyiU34+Pw4iU6QqazxUZ/+pUMWXQTq" });
-				*/
 
-        cursor.addRow(new Object[] {
-                1,
-                "Test RTMP stream",
-                "rtmp://10.0.1.7:1935/live/test",
-                null });
-        cursor.addRow(new Object[] {
-                2,
-                "Asus Demo",
-                "/sdcard/Movies/m_ASUS_Display_Demo.mp4",
-                null });
-        cursor.addRow(new Object[] {
-                3,
-                "Dawn of the Planet of the Apes",
-                "/sdcard/daa-sample.of.the.release.of.the.daawn.of.the.planet.of.the.rapes-720p.mkv",
-                null });
-
-        cursor.addRow(new Object[] {
-                4,
-                "Fury 2014",
-                "/sdcard/fury.2014.720p.bluray.x264-sparks.sample.mkv",
-                null });
-
-        cursor.addRow(new Object[] {
-                4,
-                "Roller Coaster",
-                "/sdcard/roller-coaster.mp4",
-                null });
-
+        dbHelper = new VideoListSQLiteHelper(this);
         mAdapter = new MainAdapter(this);
-		mAdapter.swapCursor(cursor);
 
-		mListView = (ListView) findViewById(android.R.id.list);
+		mListView = (PullToRefreshListView) findViewById(android.R.id.list);
 		mListView.setAdapter(mAdapter);
 		mListView.setOnItemClickListener(this);
-	}
-	
+        mListView.setTextRefreshing("Scanning for media files...");
+
+        mListView.setOnRefreshListener(new PullToRefreshListView.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                Log.w(TAG, "refreshing");
+                AsyncTask<File, Void, Void> scanTask = new AsyncTask<File, Void, Void>() {
+
+                    void startScanning(File startDir) {
+                        LinkedList<File> q = new LinkedList<>();
+
+                        q.add(startDir);
+
+                        while (q.size() > 0) {
+                            File current = q.removeFirst();
+                            File[] list = current.listFiles();
+
+                            for (File f : list) {
+                                if (f.isDirectory()) {
+//                                    Log.d("", "Dir: " + f.getAbsoluteFile());
+                                    q.add(f);
+                                } else {
+                                    String filename = f.toString();
+
+//                                    Log.d("", "file: " + filename);
+                                    int lastIndex = filename.lastIndexOf(".");
+                                    if (lastIndex >= 0) {
+                                        String ext = filename.substring(lastIndex);
+                                        if (mediaFileExtensionsHash.contains(ext)) {
+                                            Log.d("", "found a media file: " + f.getAbsoluteFile());
+
+                                            // add an entry to our cache database.
+                                            addURL(getLastPathFragment(filename), filename, null);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+
+                    @Override
+                    protected void onPreExecute() {
+                        super.onPreExecute();
+                        clearAll();
+                    }
+
+                    @Override
+                    protected Void doInBackground(File... files) {
+                        for (int i = 0; i < files.length; i++) {
+                            startScanning(files[i]);
+                        }
+
+                        return null;
+                    }
+
+                    @Override
+                    protected void onPostExecute(Void aVoid) {
+                        super.onPostExecute(aVoid);
+                        refresh();
+                        mListView.onRefreshComplete();
+                    }
+                };
+
+                scanTask.execute(Environment.getExternalStorageDirectory());
+            }
+        });
+
+        refresh();
+
+        if (isFirstTimeUse()) {
+            mListView.setRefreshing();
+            setFirstTimeUsed();
+        }
+
+        // hmmm... perhaps for v4 support package is necessary
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
+        getSupportActionBar().setIcon(R.drawable.actionbar_space_between_icon_and_title);
+    }
+
+    boolean isFirstTimeUse() {
+        SharedPreferences settings = getSharedPreferences(MainActivity.PREFS_NAME, 0);
+        boolean flag = settings.getBoolean(PREFS_FIRST_TIME_USE, true);
+        return flag;
+    }
+
+    void setFirstTimeUsed() {
+        SharedPreferences settings = getSharedPreferences(MainActivity.PREFS_NAME, 0);
+        SharedPreferences.Editor editor = settings.edit();
+
+        if (isFirstTimeUse()) {
+            editor.putBoolean(PREFS_FIRST_TIME_USE, false);
+        }
+
+        // Commit the edits!
+        editor.commit();
+
+    }
+
 	private static String getSDCardFile(String file) {
 		File videoFile = new File(Environment.getExternalStorageDirectory(),
 				file);
@@ -177,9 +210,75 @@ public class MainActivity extends ActionBarActivity implements OnItemClickListen
                 ConnectDialogFragment dlg = new ConnectDialogFragment();
                 dlg.show(getFragmentManager(), CONNECT_DIALOG_TAG);
                 break;
+
+            case R.id.action_adjust:
+                startIPDAdjustActivity();
+                break;
+
             default:
                 return super.onOptionsItemSelected(item);
         }
         return super.onOptionsItemSelected(item);
     }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == PICKFILE_RESULT_CODE) {
+            if (resultCode != 0) {
+                Uri dat = data.getData();
+                addURL(dat.getLastPathSegment(), Uri.decode(dat.toString()), null);
+                refresh();
+            } else {
+                Log.w(TAG, "nothing has been selected");
+            }
+        }
+        else {
+            Log.e(TAG, "not known request code: " + requestCode);
+        }
+
+    }
+
+    void addURL(String title, String url, String encKey) {
+        ContentValues values = new ContentValues();
+        values.put(VideoListSQLiteHelper.COLUMN_TITLE, title);
+        values.put(VideoListSQLiteHelper.COLUMN_URL, url);
+        values.put(VideoListSQLiteHelper.COLUMN_ENC_KEY, encKey);
+
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        long insertId = db.insert(VideoListSQLiteHelper.TABLE_VIDEOS, null,
+                values);
+    }
+
+    void refresh() {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        Cursor cursor = db.query(VideoListSQLiteHelper.TABLE_VIDEOS,
+                allColumns, null, null, null, null, null);
+        mAdapter.swapCursor(cursor);
+    }
+
+    void clearAll() {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.delete(VideoListSQLiteHelper.TABLE_VIDEOS, "", null);
+    }
+
+    void startPickFileActivity() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("file/*");
+        startActivityForResult(intent, PICKFILE_RESULT_CODE);
+    }
+
+    void playUri(Uri uri) {
+        Intent intent = new Intent(AppConstants.VIDEO_PLAY_ACTION);
+        intent.putExtra(AppConstants.VIDEO_PLAY_ACTION_EXTRA_URL, Uri.decode(uri.toString()));
+        startActivity(intent);
+    }
+
+    private void startIPDAdjustActivity() {
+        Intent intent = new Intent(this, IPDAdjustActivity.class);
+        startActivity(intent);
+    }
+
 }

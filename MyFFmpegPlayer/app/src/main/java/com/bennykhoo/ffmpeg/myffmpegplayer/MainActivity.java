@@ -151,6 +151,10 @@ public class MainActivity extends ActionBarActivity implements OnItemClickListen
             mListView.setRefreshing();
             setFirstTimeUsed();
         }
+
+        // hmmm... perhaps for v4 support package is necessary
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
+        getSupportActionBar().setIcon(R.drawable.actionbar_space_between_icon_and_title);
     }
 
     boolean isFirstTimeUse() {

@@ -792,9 +792,10 @@ enum WaitFuncRet player_wait_for_frame(struct Player *player, int64_t stream_tim
 			int64_t new_value = player->start_time - sleep_time;
 
 			LOGI(4,
-					"player_wait_for_frame[%d] correcting %f to %f because is too %s",
+					"player_wait_for_frame[%d] correcting %f to %f because is %lld µs too %s",
 					stream_no, (av_gettime() - player->start_time) / 1000000.0,
 					(av_gettime() - new_value) / 1000000.0,
+					sleep_time,
 					sleep_time > 0ll ? "early" : "late");
 
 			player->start_time = new_value;

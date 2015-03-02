@@ -1016,7 +1016,7 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 		// ipd adjustment from center of frame
 		int offset = player->ipd_offset;
 
-		LOGI(8, "cropping left frame to %d:%d:%d:%d", ctx->width/4 - offset, 0, buffer1.stride, buffer1.height);
+		LOGI(8, "cropping left frame to %d:%d:%d:%d", ctx->width/2 - buffer1.stride/2 - offset, 0, buffer1.stride, buffer1.height);
 		argb_crop(out_frame->data[0], out_frame->linesize[0], ctx->width, ctx->height,
 				ctx->width/2 - buffer1.stride/2 - offset, 0, buffer1.stride, buffer1.height, rgb_frame->data[0]);
 
@@ -1026,7 +1026,7 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 				buffer2.width, buffer2.height);
 		rgb_frame2.linesize[0] = buffer2.stride * 4;
 
-		LOGI(8, "cropping right frame to %d:%d:%d:%d", ctx->width/4 + offset, 0, buffer2.stride, buffer2.height);
+		LOGI(8, "cropping right frame to %d:%d:%d:%d", ctx->width/2 - buffer2.stride/2 + offset, 0, buffer2.stride, buffer2.height);
 		argb_crop(out_frame->data[0], out_frame->linesize[0], ctx->width, ctx->height,
 				ctx->width/2 - buffer2.stride/2 + offset, 0, buffer2.stride, buffer2.height, rgb_frame2.data[0]);
 

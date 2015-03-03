@@ -27,6 +27,7 @@
 #include <libavutil/pixdesc.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/samplefmt.h>
+#include <libavutil/ffversion.h>
 
 #include <libswscale/swscale.h>
 
@@ -3040,6 +3041,8 @@ int jni_player_init(JNIEnv *env, jobject thiz) {
 #endif
 
 	player_print_all_codecs();
+
+	LOGI(1, "Player linked with ffmpeg library version %s", FFMPEG_VERSION);
 
 	goto end;
 

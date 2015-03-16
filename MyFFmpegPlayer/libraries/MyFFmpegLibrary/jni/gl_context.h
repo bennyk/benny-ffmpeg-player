@@ -5,6 +5,12 @@
 
 #ifdef __cplusplus
 
+struct GlContextRenderer
+{
+	virtual bool initialize() = 0;
+	virtual void onDraw() = 0;
+};
+
 class GlContext
 {
 public:
@@ -14,6 +20,8 @@ public:
 
 public:
 	bool initialize(ANativeWindow *window);
+	void draw();
+	bool swapBuffer();
 
 private:
 	void destroy();
@@ -25,6 +33,8 @@ private:
     EGLDisplay _display;
     EGLSurface _surface;
     EGLContext _context;
+
+    GlContextRenderer *_renderer;
 };
 
 #else
@@ -41,6 +51,7 @@ extern "C" {
 GlContext *glcontext_initialize(ANativeWindow *window);
 void glcontext_draw_frame(GlContext *context,
 		const uint8_t *src, int width, int height);
+int glcontext_swapBuffer(GlContext *context);
 
 #ifdef __cplusplus
 }

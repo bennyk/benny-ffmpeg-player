@@ -10,6 +10,9 @@ LOCAL_C_INCLUDES += $(MY_SYSROOT)/include
 # ffmpeg private header files
 LOCAL_C_INCLUDES += /Users/bennykhoo/Sources/MyVR/android-ffmpeg-x264/Project/jni/ffmpeg
 
+# opengl helpers
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/include $(LOCAL_PATH)/glm
+
 #LOCAL_LDLIBS += -L$(MY_SYSROOT)/lib -lavcodec -lavformat -lavresample -lavutil -lswresample
 LOCAL_LDLIBS += -L$(MY_SYSROOT)/lib -lavdevice -lavfilter -lavformat -lswscale -lpostproc -lswresample -lavcodec -lavutil -lx264 -lrtmp -lssl -lcrypto
 
@@ -20,7 +23,7 @@ LOCAL_LDLIBS += -lEGL -lGLESv2
 LOCAL_SRC_FILES:= ffmpeg-jni.c fps.c player.c queue.c helpers.c convert.cpp jni-protocol.c gl_context.cpp
 LOCAL_PRELINK_MODULE := false
 
-LOCAL_CFLAGS += -DLIBYUV
+LOCAL_CFLAGS += -DLIBYUV -DGL_GLEXT_PROTOTYPES -fexceptions
 #-DMEASURE_TIME
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libyuv/include
 LOCAL_CPP_INCLUDES += $(LOCAL_PATH)/libyuv/include

@@ -1033,6 +1033,10 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 #endif // SUBTITLES
 
 	glcontext_draw_frame(player->glcontext, out_frame->data, ctx->width, ctx->height );
+	int status = glcontext_swapBuffer(player->glcontext);
+	if (status < 0) {
+		LOGE(1, "eglSwapBuffers() returned error %d", eglGetError());
+	}
 
 	// increment fps counter
 	if (player->fpsCounter != NULL) {
@@ -1093,7 +1097,8 @@ void * player_decode(void * data) {
 	}
 
 	if (codec_type == AVMEDIA_TYPE_VIDEO) {
-		if (!glcontext_initialize(player->window1)) {
+		player->glcontext = glcontext_initialize(player->window1);
+		if (player->glcontext == NULL) {
 			LOGI(10, "Failed to initialize GL context");
 			err = -ERROR_COULD_NOT_ATTACH_THREAD;
 			goto end;

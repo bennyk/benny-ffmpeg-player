@@ -9,6 +9,7 @@ struct GlContextRenderer
 {
 	virtual bool initialize() = 0;
 	virtual void onDraw() = 0;
+	virtual void bindRGBA(const uint8_t *data, int width, int height) = 0;
 };
 
 class GlContext
@@ -22,6 +23,7 @@ public:
 	bool initialize(ANativeWindow *window);
 	void draw();
 	bool swapBuffer();
+	void bindRGBA(const uint8_t *data, int width, int height);
 
 private:
 	void destroy();

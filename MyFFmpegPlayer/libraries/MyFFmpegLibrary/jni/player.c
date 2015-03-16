@@ -1767,6 +1767,18 @@ int player_try_open_stream(struct Player *player, enum AVMediaType codec_type,
 	}
 
 	const struct AVCodec * codec = ctx->codec;
+
+	// the default thread count is good enough
+#if 0
+	// configure codec multithread
+	if (codec_type == AVMEDIA_TYPE_VIDEO) {
+		stream->codec->thread_count = av_cpu_count();
+		stream->codec->thread_type = FF_THREAD_FRAME;
+		LOGI(1, "codec name is %s", avcodec_get_name(stream->codec->codec_id));
+		LOGI(1, "setting [%d] codec thread count: %d thread_type: %d", stream_no, stream->codec->thread_count, stream->codec->thread_type);
+	}
+#endif
+
 	int err = player_open_stream(player, ctx, &codec, stream_no);
 	if (err < 0) {
 		return -1;
@@ -2320,6 +2332,15 @@ int player_find_stream_info(struct Player *player) {
 		LOGE(1, "Could not open stream\n");
 		return -ERROR_COULD_NOT_OPEN_STREAM;
 	}
+
+#if LOG_LEVEL > 1
+	// dump codec name
+	int i;
+	for (i = 0; i < player->input_format_ctx->nb_streams; i++) {
+		LOGI(1, "found codec \"%s\" for stream [%d]", avcodec_get_name(player->input_format_ctx->streams[i]->codec->codec_id), i);
+	}
+#endif
+
 	return ERROR_NO_ERROR;
 }
 

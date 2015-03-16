@@ -36,7 +36,6 @@ public class FFmpegSurfaceView extends SurfaceView implements FFmpegDisplay,
 
 	private FFmpegPlayer mMpegPlayer = null;
 	private boolean mCreated = false;
-    private AttachmentSide attachmentSide;
 
 	public FFmpegSurfaceView(Context context) {
 		this(context, null, 0);
@@ -55,13 +54,12 @@ public class FFmpegSurfaceView extends SurfaceView implements FFmpegDisplay,
 	}
 
 	@Override
-	public void setMpegPlayer(FFmpegPlayer fFmpegPlayer, AttachmentSide side) {
+	public void setMpegPlayer(FFmpegPlayer fFmpegPlayer) {
 		if (mMpegPlayer != null)
 			throw new RuntimeException(
 					"setMpegPlayer could not be called twice");
 
 		this.mMpegPlayer = fFmpegPlayer;
-        this.attachmentSide = side;
 	}
 
 	@Override
@@ -77,18 +75,7 @@ public class FFmpegSurfaceView extends SurfaceView implements FFmpegDisplay,
 		}
 
 		Surface surface = holder.getSurface();
-        if (attachmentSide == AttachmentSide.LEFT) {
-            Log.i(TAG, "attaching left surface");
-            mMpegPlayer.attachSurface1(surface);
-        }
-        else if (attachmentSide == AttachmentSide.RIGHT) {
-            Log.i(TAG, "attaching right surface");
-            mMpegPlayer.attachSurface2(surface);
-        }
-        else {
-            throw new RuntimeException(
-                    "invalid attachment side " + attachmentSide);
-        }
+        mMpegPlayer.attachSurface1(surface);
 		mCreated = true;
 	}
 

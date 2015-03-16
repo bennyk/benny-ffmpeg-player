@@ -162,15 +162,13 @@ public class VideoActivity extends Activity implements OnClickListener,
         mMpegPlayer = new FFmpegPlayer(this);
 		mMpegPlayer.setMpegListener(this);
 
-        SurfaceView surfaceView1 = (SurfaceView) this.findViewById(R.id.video_view1);
-        SurfaceView surfaceView2 = (SurfaceView) this.findViewById(R.id.video_view2);
+        SurfaceView surfaceView = (SurfaceView) this.findViewById(R.id.video_view);
 
-        mMpegPlayer.attachView((FFmpegDisplay) surfaceView1, FFmpegDisplay.AttachmentSide.LEFT);
-        mMpegPlayer.attachView((FFmpegDisplay) surfaceView2, FFmpegDisplay.AttachmentSide.RIGHT);
+        mMpegPlayer.attachView((FFmpegDisplay) surfaceView);
 		setDataSource();
 
         // container for our multi surface views
-        mVideoView = this.findViewById(R.id.video_view);
+        mVideoView = surfaceView;
 
         mCoverView = this.findViewById(R.id.cover_view);
         mCoverView.setOnClickListener(new OnClickListener() {
@@ -561,8 +559,8 @@ public class VideoActivity extends Activity implements OnClickListener,
 
                 Log.d(TAG, "parsed IPD values: " + ipdMM + " mm " + _ipdPX + "px");
 
-                SurfaceView surfaceView1 = (SurfaceView) this.findViewById(R.id.video_view1);
-                Log.d(TAG, "surface view1 width = " + surfaceView1.getWidth());
+                SurfaceView surfaceView = (SurfaceView) this.findViewById(R.id.video_view);
+                Log.d(TAG, "surface view width = " + surfaceView.getWidth());
 
                 mMpegPlayer.setIPDPx(_ipdPX);
 

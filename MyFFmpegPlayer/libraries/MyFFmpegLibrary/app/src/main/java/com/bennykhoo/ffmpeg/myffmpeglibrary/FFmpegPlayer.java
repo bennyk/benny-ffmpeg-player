@@ -289,10 +289,9 @@ public class FFmpegPlayer {
 	private native long getVideoDurationNative();
 	
 	public native void attachSurface1(Surface surface);
-    public native void attachSurface2(Surface surface);
 
-    public void attachView(FFmpegDisplay view, FFmpegDisplay.AttachmentSide side) {
-        view.setMpegPlayer(this, side);
+    public void attachView(FFmpegDisplay view) {
+        view.setMpegPlayer(this);
     }
 
 	/**

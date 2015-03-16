@@ -15,8 +15,9 @@ LOCAL_LDLIBS += -L$(MY_SYSROOT)/lib -lavdevice -lavfilter -lavformat -lswscale -
 
 LOCAL_LDLIBS += -landroid
 LOCAL_LDLIBS += -llog -ljnigraphics -lz
+LOCAL_LDLIBS += -lEGL -lGLESv2
 
-LOCAL_SRC_FILES:= ffmpeg-jni.c fps.c player.c queue.c helpers.c convert.cpp jni-protocol.c
+LOCAL_SRC_FILES:= ffmpeg-jni.c fps.c player.c queue.c helpers.c convert.cpp jni-protocol.c gl_context.cpp
 LOCAL_PRELINK_MODULE := false
 
 LOCAL_CFLAGS += -DLIBYUV

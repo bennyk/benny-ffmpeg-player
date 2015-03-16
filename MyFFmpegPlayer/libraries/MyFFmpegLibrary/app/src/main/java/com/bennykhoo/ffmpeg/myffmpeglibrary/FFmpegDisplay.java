@@ -19,9 +19,5 @@
 package com.bennykhoo.ffmpeg.myffmpeglibrary;
 
 public interface FFmpegDisplay {
-    public static enum AttachmentSide {
-        LEFT, RIGHT
-    }
-
-    void setMpegPlayer(FFmpegPlayer fFmpegPlayer, AttachmentSide side);
+    void setMpegPlayer(FFmpegPlayer fFmpegPlayer);
 }

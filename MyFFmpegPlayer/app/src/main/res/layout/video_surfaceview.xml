@@ -4,27 +4,12 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" >
 
-    <LinearLayout
+    <com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegSurfaceView
         android:id="@+id/video_view"
         android:visibility="visible"
-        android:orientation="horizontal"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent">
-
-        <com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegSurfaceView
-            android:id="@+id/video_view1"
-            android:layout_weight="0.5"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            />
-
-        <com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegSurfaceView
-            android:id="@+id/video_view2"
-            android:layout_weight="0.5"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            />
-    </LinearLayout>
+        android:layout_height="fill_parent"
+        />
 
     <TextView
         android:layout_width="wrap_content"

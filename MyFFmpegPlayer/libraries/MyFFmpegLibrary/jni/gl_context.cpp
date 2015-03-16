@@ -1,0 +1,185 @@
+#include "gl_context.h"
+
+#include "logger.h"
+
+#define LOG_TAG "GlContext"
+
+GlContext::GlContext()
+: _display(0), _surface(0), _context(0), _window(0)
+{}
+
+GlContext::~GlContext()
+{}
+
+bool GlContext::initialize(ANativeWindow *window)
+{
+    EGLDisplay display;
+    EGLConfig config;
+    EGLint numConfigs;
+    EGLint format;
+    EGLSurface surface;
+    EGLContext context;
+    EGLint width;
+    EGLint height;
+    GLfloat ratio;
+
+    LOG_INFO("Initializing GL context");
+
+    if ((display = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY) {
+        LOG_ERROR("eglGetDisplay() returned error %d", eglGetError());
+        return false;
+    }
+    if (!eglInitialize(display, 0, 0)) {
+        LOG_ERROR("eglInitialize() returned error %d", eglGetError());
+        return false;
+    }
+
+    const EGLint RGBX_8888_ATTRIBS[] =
+    {
+    		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+			EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+			EGL_BLUE_SIZE, 8,
+			EGL_GREEN_SIZE, 8,
+			EGL_RED_SIZE, 8,
+			EGL_DEPTH_SIZE, 8,
+			EGL_NONE
+    };
+
+    const EGLint RGB_565_ATTRIBS[] =
+    {
+    		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+			EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+			EGL_BLUE_SIZE, 5,
+			EGL_GREEN_SIZE, 6,
+			EGL_RED_SIZE, 5,
+			EGL_DEPTH_SIZE, 8, EGL_NONE
+    };
+
+    const EGLint* attribList;
+    int windowFormat = ANativeWindow_getFormat(window);
+    if (true || windowFormat == WINDOW_FORMAT_RGBA_8888 || windowFormat == WINDOW_FORMAT_RGBX_8888) {
+    	LOG_INFO("setting window format to WINDOW_FORMAT_RGBA_8888");
+    	attribList = RGBX_8888_ATTRIBS;
+    }
+    else {
+    	LOG_INFO("setting window format to WINDOW_FORMAT_RGB_565");
+    	attribList = RGB_565_ATTRIBS;
+    }
+
+    if (!eglChooseConfig(display, attribList, &config, 1, &numConfigs)) {
+        LOG_ERROR("eglChooseConfig() returned error %d", eglGetError());
+        destroy();
+        return false;
+    }
+
+    if (!eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format)) {
+        LOG_ERROR("eglGetConfigAttrib() returned error %d", eglGetError());
+        destroy();
+        return false;
+    }
+
+    ANativeWindow_setBuffersGeometry(window, 0, 0, format);
+
+    if ((surface = eglCreateWindowSurface(display, config, window, 0)) == EGL_NO_SURFACE) {
+        LOG_ERROR("eglCreateWindowSurface() returned error %d", eglGetError());
+        destroy();
+        return false;
+    }
+
+    EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
+//        EGLint *contextAttribs = NULL;
+    if ((context = eglCreateContext(display, config, 0, contextAttribs)) == EGL_NO_CONTEXT) {
+        LOG_ERROR("eglCreateContext() returned error %d", eglGetError());
+        destroy();
+        return false;
+    }
+
+    if (!eglMakeCurrent(display, surface, surface, context)) {
+        LOG_ERROR("eglMakeCurrent() returned error %d", eglGetError());
+        destroy();
+        return false;
+    }
+
+    if (!eglQuerySurface(display, surface, EGL_WIDTH, &width) ||
+        !eglQuerySurface(display, surface, EGL_HEIGHT, &height)) {
+        LOG_ERROR("eglQuerySurface() returned error %d", eglGetError());
+        destroy();
+        return false;
+    }
+
+    _display = display;
+    _surface = surface;
+    _context = context;
+    _window = window;
+
+//        glDisable(GL_DITHER);
+//        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+//        glEnable(GL_CULL_FACE);
+//        glShadeModel(GL_SMOOTH);
+//        glEnable(GL_DEPTH_TEST);
+
+    LOG_INFO("set viewport width %d height %d", width, height);
+    glViewport(0, 0, width, height);
+    glEnable(GL_SCISSOR_TEST);
+
+//        ratio = (GLfloat) width / height;
+//        glMatrixMode(GL_PROJECTION);
+//        glLoadIdentity();
+//        glFrustumf(-ratio, ratio, -1, 1, 2, 10);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    /*
+    if (stereoMode) {
+        // setup stereoscopic mode
+    	_leftChannel = ParcelInfo(0, 0, width/2, height, LEFT_CHANNEL);
+    	_rightChannel = ParcelInfo(width/2, 0, width/2, height, RIGHT_CHANNEL);
+    } else {
+    	// only _leftChannel is rendered but we defined the right anyway.
+    	_leftChannel = ParcelInfo(0, 0, width, height, SINGLE_CHANNEL);
+    	_rightChannel = ParcelInfo(0, 0, width, height, SINGLE_CHANNEL);
+    }
+    */
+
+    LOG_INFO("Version: %s GLSL: %s", glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
+    return true;
+}
+
+void GlContext::destroy() {
+    LOG_INFO("Destroying context");
+
+    eglMakeCurrent(_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroyContext(_display, _context);
+    eglDestroySurface(_display, _surface);
+    eglTerminate(_display);
+
+    _display = EGL_NO_DISPLAY;
+    _surface = EGL_NO_SURFACE;
+    _context = EGL_NO_CONTEXT;
+
+    if (_window != NULL) {
+    	ANativeWindow_release(_window);
+    }
+
+    return;
+}
+
+GlContext *glcontext_initialize(ANativeWindow *window)
+{
+	GlContext *aobj = new GlContext();
+	if (aobj->initialize(window)) {
+		return aobj;
+	}
+	return NULL;
+}
+
+void glcontext_draw_frame(GlContext *context,
+		const uint8_t *src, int width, int height)
+{
+	LOG_INFO("draw frame with %dx%d", width, height);
+}

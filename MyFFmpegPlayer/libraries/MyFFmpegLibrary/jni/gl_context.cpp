@@ -6,10 +6,10 @@
 #include "FrameRenderer.hpp"
 
 GlContext::GlContext()
-: _window(0), _display(0), _surface(0), _context(0), _renderer(0)
+: _window(0), _display(0), _surface(0), _context(0), _renderer(0), _width(0), _height(0)
 {
-	_renderer = new framerenderer::FrameRenderer();
-//	_renderer = new testrenderer::TestRenderer();
+	_renderer = new framerenderer::FrameRenderer(this);
+//	_renderer = new testrenderer::TestRenderer(this);
 }
 
 GlContext::~GlContext()
@@ -23,8 +23,6 @@ bool GlContext::initialize(ANativeWindow *window)
     EGLint format;
     EGLSurface surface;
     EGLContext context;
-    EGLint width;
-    EGLint height;
     GLfloat ratio;
 
     LOG_INFO("Initializing GL context");
@@ -104,8 +102,8 @@ bool GlContext::initialize(ANativeWindow *window)
         return false;
     }
 
-    if (!eglQuerySurface(display, surface, EGL_WIDTH, &width) ||
-        !eglQuerySurface(display, surface, EGL_HEIGHT, &height)) {
+    if (!eglQuerySurface(display, surface, EGL_WIDTH, &_width) ||
+        !eglQuerySurface(display, surface, EGL_HEIGHT, &_height)) {
         LOG_ERROR("eglQuerySurface() returned error %d", eglGetError());
         destroy();
         return false;
@@ -123,8 +121,8 @@ bool GlContext::initialize(ANativeWindow *window)
 //        glShadeModel(GL_SMOOTH);
 //        glEnable(GL_DEPTH_TEST);
 
-    LOG_INFO("set viewport width %d height %d", width, height);
-    glViewport(0, 0, width, height);
+    LOG_INFO("set viewport width %d height %d", _width, _height);
+    glViewport(0, 0, _width, _height);
     glEnable(GL_SCISSOR_TEST);
 
 //        ratio = (GLfloat) width / height;
@@ -138,6 +136,7 @@ bool GlContext::initialize(ANativeWindow *window)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    glEnable(GL_TEXTURE_2D);
     /*
     if (stereoMode) {
         // setup stereoscopic mode
@@ -183,6 +182,11 @@ void GlContext::bindRGBA(const uint8_t *src, int width, int height) {
 
 bool GlContext::swapBuffer() {
 	return eglSwapBuffers(_display, _surface);
+}
+
+float GlContext::aspectRatio()
+{
+	return (float)_width/_height;
 }
 
 GlContext *glcontext_initialize(ANativeWindow *window)

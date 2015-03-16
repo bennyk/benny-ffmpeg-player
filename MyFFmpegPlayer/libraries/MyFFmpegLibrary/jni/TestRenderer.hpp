@@ -76,7 +76,7 @@ struct TestRenderer : GlContextRenderer{
     const int tw = 40;
     const int th = 40;
 
-    TestRenderer() : GlContextRenderer() {}
+    TestRenderer(GlContext *context) : GlContextRenderer(context) {}
 
     virtual bool initialize(){
   	  LOG_INFO("init TestRenderer");
@@ -222,7 +222,7 @@ struct TestRenderer : GlContextRenderer{
     	glm::vec3 eyePos = glm::vec3(0,0,1);
     	glm::mat4 view = glm::lookAt( eyePos, eyePos+forwardDir, q1 * glm::vec3(0,1,0) );
 
-    	glm::mat4 proj = glm::perspective( 3.14f / 3.f, 1.777f, 0.1f,-10.f);
+    	glm::mat4 proj = glm::perspective( 3.14f / 3.f, _context->aspectRatio(), 0.1f,-10.f);
 
     	glUniformMatrix4fv( viewID, 1, GL_FALSE, glm::value_ptr(view) );
     	glUniformMatrix4fv( projectionID, 1, GL_FALSE, glm::value_ptr(proj) );

@@ -5,8 +5,15 @@
 
 #ifdef __cplusplus
 
+class GlContext;
+
 struct GlContextRenderer
 {
+	GlContext *_context;
+	GlContextRenderer(GlContext *context) : _context(context)
+	{
+	}
+
 	virtual bool initialize() = 0;
 	virtual void onDraw() = 0;
 	virtual void bindRGBA(const uint8_t *data, int width, int height) = 0;
@@ -24,6 +31,7 @@ public:
 	void draw();
 	bool swapBuffer();
 	void bindRGBA(const uint8_t *data, int width, int height);
+	float aspectRatio();
 
 private:
 	void destroy();
@@ -37,6 +45,7 @@ private:
     EGLContext _context;
 
     GlContextRenderer *_renderer;
+    int _width, _height;
 };
 
 #else

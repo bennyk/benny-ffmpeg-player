@@ -72,7 +72,7 @@ struct FrameRenderer : GlContextRenderer{
     //ID of Uniforms
     GLuint modelID, viewID, projectionID;
 
-    FrameRenderer() : GlContextRenderer() {}
+    FrameRenderer(GlContext *context) : GlContextRenderer(context) {}
 
     virtual bool initialize(){
   	  LOG_INFO("init FrameRenderer");
@@ -210,7 +210,7 @@ struct FrameRenderer : GlContextRenderer{
     	glm::vec3 eyePos = glm::vec3(0,0,1);
     	glm::mat4 view = glm::lookAt( eyePos, eyePos+forwardDir, q1 * glm::vec3(0,1,0) );
 
-    	glm::mat4 proj = glm::perspective( 3.14f / 3.f, 1.777f, 0.1f,-10.f);
+    	glm::mat4 proj = glm::perspective( 3.14f / 3.f, _context->aspectRatio(), 0.1f,-10.f);
 
     	glUniformMatrix4fv( viewID, 1, GL_FALSE, glm::value_ptr(view) );
     	glUniformMatrix4fv( projectionID, 1, GL_FALSE, glm::value_ptr(proj) );

@@ -66,6 +66,7 @@ public:
 	float aspectRatio();
 	void setLookatAngles(float azimuth, float pitch, float roll);
 	void getLookatAngles(float &azimuth, float &pitch, float &roll);
+	void setIPDDistancePx(unsigned ipdPx);
 
 private:
 	void destroy();
@@ -103,6 +104,7 @@ void glcontext_draw_frame(GlContext *context,
 		const uint8_t *src, int width, int height);
 int glcontext_swapBuffer(GlContext *context);
 void glcontext_setLookatAngles(GlContext *context, float azimuth, float pitch, float roll);
+void glcontext_setIPDDistancePx(GlContext *context, unsigned ipdPx);
 
 #ifdef __cplusplus
 }

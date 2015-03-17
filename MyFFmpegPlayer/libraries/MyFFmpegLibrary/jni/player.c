@@ -1097,12 +1097,15 @@ void * player_decode(void * data) {
 	}
 
 	if (codec_type == AVMEDIA_TYPE_VIDEO) {
-		player->glcontext = glcontext_initialize(player->window1, ctx->width, ctx->height);
-		if (player->glcontext == NULL) {
+		GlContext *glcontext = glcontext_initialize(player->window1, ctx->width, ctx->height);
+		if (glcontext == NULL) {
 			LOGI(10, "Failed to initialize GL context");
 			err = -ERROR_COULD_NOT_ATTACH_THREAD;
 			goto end;
 		}
+
+		glcontext_setIPDDistancePx(glcontext, player->ipd_offset);
+		player->glcontext = glcontext;
 	}
 
 	for (;;) {
@@ -3049,8 +3052,11 @@ void jni_player_render_frame_stop(JNIEnv *env, jobject thiz) {
 void jni_player_set_ipd_pixels(JNIEnv *env, jobject thiz, int ipdPx) {
 	struct Player *player = player_get_player_field(env, thiz);
 	pthread_mutex_lock(&player->mutex_queue);
-	player->ipd_offset = ANativeWindow_getWidth(player->window1) / 2 - ipdPx / 2;
-	LOGI(1, "jni_player_set_ipd_pixels setting IPD offset to %d = %d (surface width) / 2 - %d (ipdPx) / 2", player->ipd_offset, ANativeWindow_getWidth(player->window1), ipdPx);
+
+	LOGI(1, "jni_player_set_ipd_pixels setting IPD distance %d px", ipdPx);
+
+	player->ipd_offset = ipdPx;
+
 	pthread_mutex_unlock(&player->mutex_queue);
 }
 

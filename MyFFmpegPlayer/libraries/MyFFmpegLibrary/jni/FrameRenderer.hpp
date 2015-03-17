@@ -219,6 +219,7 @@ struct FrameRenderer : GlContextRenderer{
     	glm::quat q1 = glm::angleAxis(pitch, glm::vec3(0,0,1));
 
     	// adjust the horizontal distance for IPD too.
+//    	LOG_INFO("ipd ratio %.2f", channelInfo.getHalfIPDOffsetRatio());
     	glm::vec3 eyePos = glm::vec3(channelInfo.getHalfIPDOffsetRatio(),0,1.7);
     	glm::mat4 view = glm::lookAt( eyePos, eyePos+forwardDir, q1 * glm::vec3(0,1,0) );
 

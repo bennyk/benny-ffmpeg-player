@@ -212,6 +212,12 @@ void GlContext::getLookatAngles(float &azimuth, float &pitch, float &roll)
 	roll = _lookatAngles[2];
 }
 
+void GlContext::setIPDDistancePx(unsigned ipdPx)
+{
+	_leftChannel.halfIPDDistancePx = ipdPx/2;
+	_rightChannel.halfIPDDistancePx = ipdPx/2;
+}
+
 GlContext *glcontext_initialize(ANativeWindow *window, int frameWidth, int frameHeight)
 {
 	GlContext *aobj = new GlContext(frameWidth, frameHeight);
@@ -237,4 +243,9 @@ int glcontext_swapBuffer(GlContext *context)
 void glcontext_setLookatAngles(GlContext *context, float azimuth, float pitch, float roll)
 {
 	context->setLookatAngles(azimuth, pitch, roll);
+}
+
+void glcontext_setIPDDistancePx(GlContext *context, unsigned ipdPx)
+{
+	context->setIPDDistancePx(ipdPx);
 }

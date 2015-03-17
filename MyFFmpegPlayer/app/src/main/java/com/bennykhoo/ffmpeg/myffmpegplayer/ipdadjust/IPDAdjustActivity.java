@@ -46,6 +46,8 @@ public class IPDAdjustActivity extends Activity {
     private static final String TAG = "IPDAdjustActivity";
     private static final int KEY_UP = 19;
     private static final int KEY_DOWN = 20;
+    private static final int KEY_LEFT = 21;
+    private static final int KEY_RIGHT = 22;
     private static final int VOLUME_UP = 24;
     private static final int VOLUME_DOWN = 25;
     private static final int KEY_BACK = 4;
@@ -272,11 +274,13 @@ public class IPDAdjustActivity extends Activity {
 
         switch (keyCode) {
             case VOLUME_UP:
+            case KEY_LEFT:
             case KEY_DOWN:
                 _groupedIPDView.adjustApart();
                 break;
 
             case VOLUME_DOWN:
+            case KEY_RIGHT:
             case KEY_UP:
                 _groupedIPDView.adjustCloser();
                 break;

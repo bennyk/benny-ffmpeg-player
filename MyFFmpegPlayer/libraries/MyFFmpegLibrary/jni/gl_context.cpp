@@ -9,8 +9,8 @@
 GlContext::GlContext(int frameWidth, int frameHeight)
 : _window(0), _display(0), _surface(0), _context(0), _renderer(0), _width(0), _height(0), stereoMode(true)
 {
-//	_renderer = new framerenderer::FrameRenderer(this, frameWidth, frameHeight);
-	_renderer = new anaglyphicrenderer::AnaglyphicRenderer(this, frameWidth, frameHeight);
+	_renderer = new framerenderer::FrameRenderer(this, frameWidth, frameHeight);
+//	_renderer = new anaglyphicrenderer::AnaglyphicRenderer(this, frameWidth, frameHeight);
 //	_renderer = new testrenderer::TestRenderer(this);
 }
 

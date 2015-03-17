@@ -23,7 +23,7 @@ class GlContext
 {
 public:
 
-	GlContext();
+	GlContext(int frameWidth, int frameHeight);
 	~GlContext();
 
 public:
@@ -59,7 +59,7 @@ typedef struct GlContextHandle GlContext;
 extern "C" {
 #endif
 
-GlContext *glcontext_initialize(ANativeWindow *window);
+GlContext *glcontext_initialize(ANativeWindow *window, int frameWidth, int frameHeight);
 void glcontext_draw_frame(GlContext *context,
 		const uint8_t *src, int width, int height);
 int glcontext_swapBuffer(GlContext *context);

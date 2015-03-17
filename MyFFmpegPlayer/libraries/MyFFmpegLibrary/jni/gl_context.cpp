@@ -5,10 +5,10 @@
 #include "TestRenderer.hpp"
 #include "FrameRenderer.hpp"
 
-GlContext::GlContext()
+GlContext::GlContext(int frameWidth, int frameHeight)
 : _window(0), _display(0), _surface(0), _context(0), _renderer(0), _width(0), _height(0)
 {
-	_renderer = new framerenderer::FrameRenderer(this);
+	_renderer = new framerenderer::FrameRenderer(this, frameWidth, frameHeight);
 //	_renderer = new testrenderer::TestRenderer(this);
 }
 
@@ -189,9 +189,9 @@ float GlContext::aspectRatio()
 	return (float)_width/_height;
 }
 
-GlContext *glcontext_initialize(ANativeWindow *window)
+GlContext *glcontext_initialize(ANativeWindow *window, int frameWidth, int frameHeight)
 {
-	GlContext *aobj = new GlContext();
+	GlContext *aobj = new GlContext(frameWidth, frameHeight);
 	if (aobj->initialize(window)) {
 		return aobj;
 	}

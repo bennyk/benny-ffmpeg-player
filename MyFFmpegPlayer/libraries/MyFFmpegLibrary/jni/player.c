@@ -1097,7 +1097,7 @@ void * player_decode(void * data) {
 	}
 
 	if (codec_type == AVMEDIA_TYPE_VIDEO) {
-		player->glcontext = glcontext_initialize(player->window1);
+		player->glcontext = glcontext_initialize(player->window1, ctx->width, ctx->height);
 		if (player->glcontext == NULL) {
 			LOGI(10, "Failed to initialize GL context");
 			err = -ERROR_COULD_NOT_ATTACH_THREAD;

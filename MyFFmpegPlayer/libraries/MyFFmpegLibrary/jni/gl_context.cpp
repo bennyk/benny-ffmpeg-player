@@ -6,7 +6,7 @@
 #include "FrameRenderer.hpp"
 
 GlContext::GlContext(int frameWidth, int frameHeight)
-: _window(0), _display(0), _surface(0), _context(0), _renderer(0), _width(0), _height(0)
+: _window(0), _display(0), _surface(0), _context(0), _renderer(0), _width(0), _height(0), stereoMode(true)
 {
 	_renderer = new framerenderer::FrameRenderer(this, frameWidth, frameHeight);
 //	_renderer = new testrenderer::TestRenderer(this);
@@ -137,17 +137,17 @@ bool GlContext::initialize(ANativeWindow *window)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glEnable(GL_TEXTURE_2D);
-    /*
+
+
     if (stereoMode) {
         // setup stereoscopic mode
-    	_leftChannel = ParcelInfo(0, 0, width/2, height, LEFT_CHANNEL);
-    	_rightChannel = ParcelInfo(width/2, 0, width/2, height, RIGHT_CHANNEL);
+    	_leftChannel = ParcelInfo(0, 0, _width/2, _height, LEFT_CHANNEL);
+    	_rightChannel = ParcelInfo(_width/2, 0, _width/2, _height, RIGHT_CHANNEL);
     } else {
     	// only _leftChannel is rendered but we defined the right anyway.
-    	_leftChannel = ParcelInfo(0, 0, width, height, SINGLE_CHANNEL);
-    	_rightChannel = ParcelInfo(0, 0, width, height, SINGLE_CHANNEL);
+    	_leftChannel = ParcelInfo(0, 0, _width, _height, SINGLE_CHANNEL);
+    	_rightChannel = ParcelInfo(0, 0, _width, _height, SINGLE_CHANNEL);
     }
-    */
 
     LOG_INFO("Version: %s GLSL: %s", glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
     return _renderer->initialize();
@@ -173,7 +173,16 @@ void GlContext::destroy() {
 }
 
 void GlContext::draw() {
-	_renderer->onDraw();
+
+    glViewport(_leftChannel.x, _leftChannel.y, _leftChannel.width, _leftChannel.height);
+    glScissor(_leftChannel.x, _leftChannel.y, _leftChannel.width, _leftChannel.height);
+    _renderer->onDraw(_leftChannel);
+
+    if (stereoMode) {
+    	glViewport(_rightChannel.x, _rightChannel.y, _rightChannel.width, _rightChannel.height);
+    	glScissor(_rightChannel.x, _rightChannel.y, _rightChannel.width, _rightChannel.height);
+    	_renderer->onDraw(_rightChannel);
+    }
 }
 
 void GlContext::bindRGBA(const uint8_t *src, int width, int height) {

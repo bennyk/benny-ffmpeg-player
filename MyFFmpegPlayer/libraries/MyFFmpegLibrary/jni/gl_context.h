@@ -7,6 +7,38 @@
 
 class GlContext;
 
+enum ChannelTag { LEFT_CHANNEL, RIGHT_CHANNEL, SINGLE_CHANNEL };
+
+struct ParcelInfo {
+	EGLint x, y, width, height;
+	ChannelTag tag;
+	unsigned halfIPDDistancePx;
+
+	ParcelInfo() : x(0), y(0), width(0), height(0), tag(SINGLE_CHANNEL), halfIPDDistancePx(0)
+	{}
+
+	ParcelInfo(EGLint x, EGLint y, EGLint width, EGLint height, ChannelTag tag)
+	: x(x), y(y), width(width), height(height), tag(tag), halfIPDDistancePx(0) {
+
+		// init a safe default
+		halfIPDDistancePx = width/2;
+	}
+
+	float getHalfIPDOffsetRatio() {
+		if (tag == LEFT_CHANNEL)
+			return - (float) halfIPDDistancePx / width ;
+		else if (tag == RIGHT_CHANNEL)
+			return (float) halfIPDDistancePx / width ;
+		else
+			return 0.0f;
+	}
+
+	float aspectRatio() {
+		return (float)width/height;
+	}
+
+};
+
 struct GlContextRenderer
 {
 	GlContext *_context;
@@ -15,7 +47,7 @@ struct GlContextRenderer
 	}
 
 	virtual bool initialize() = 0;
-	virtual void onDraw() = 0;
+	virtual void onDraw(ParcelInfo channelInfo) = 0;
 	virtual void bindRGBA(const uint8_t *data, int width, int height) = 0;
 };
 
@@ -50,6 +82,9 @@ private:
 
     // lookAt angles in Euler format.
     float _lookatAngles[3];
+
+    ParcelInfo _leftChannel, _rightChannel;
+    bool stereoMode;
 };
 
 #else

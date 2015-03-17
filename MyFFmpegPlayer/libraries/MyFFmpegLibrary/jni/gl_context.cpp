@@ -189,6 +189,20 @@ float GlContext::aspectRatio()
 	return (float)_width/_height;
 }
 
+void GlContext::setLookatAngles(float azimuth, float pitch, float roll)
+{
+	_lookatAngles[0] = azimuth;
+	_lookatAngles[1] = pitch;
+	_lookatAngles[2] = roll;
+}
+
+void GlContext::getLookatAngles(float &azimuth, float &pitch, float &roll)
+{
+	azimuth = _lookatAngles[0];
+	pitch = _lookatAngles[1];
+	roll = _lookatAngles[2];
+}
+
 GlContext *glcontext_initialize(ANativeWindow *window, int frameWidth, int frameHeight)
 {
 	GlContext *aobj = new GlContext(frameWidth, frameHeight);
@@ -209,4 +223,9 @@ void glcontext_draw_frame(GlContext *context,
 int glcontext_swapBuffer(GlContext *context)
 {
 	return !context->swapBuffer() ? -1 : 0;
+}
+
+void glcontext_setLookatAngles(GlContext *context, float azimuth, float pitch, float roll)
+{
+	context->setLookatAngles(azimuth, pitch, roll);
 }

@@ -8,3 +8,7 @@
 *.sav
 *.log
 *.mp4
+.cproject
+*.swp
+libraries/MyFFmpegLibrary/libs
+libraries/MyFFmpegLibrary/obj

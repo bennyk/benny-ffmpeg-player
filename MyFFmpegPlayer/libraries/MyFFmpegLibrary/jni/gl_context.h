@@ -32,10 +32,11 @@ public:
 	bool swapBuffer();
 	void bindRGBA(const uint8_t *data, int width, int height);
 	float aspectRatio();
+	void setLookatAngles(float azimuth, float pitch, float roll);
+	void getLookatAngles(float &azimuth, float &pitch, float &roll);
 
 private:
 	void destroy();
-
 
 private:
     ANativeWindow* _window;
@@ -46,6 +47,9 @@ private:
 
     GlContextRenderer *_renderer;
     int _width, _height;
+
+    // lookAt angles in Euler format.
+    float _lookatAngles[3];
 };
 
 #else
@@ -63,6 +67,7 @@ GlContext *glcontext_initialize(ANativeWindow *window, int frameWidth, int frame
 void glcontext_draw_frame(GlContext *context,
 		const uint8_t *src, int width, int height);
 int glcontext_swapBuffer(GlContext *context);
+void glcontext_setLookatAngles(GlContext *context, float azimuth, float pitch, float roll);
 
 #ifdef __cplusplus
 }

@@ -208,10 +208,15 @@ struct FrameRenderer : GlContextRenderer{
 
     	BINDVERTEXARRAY(arrayID);              //<-- 3. Bind VAO
 
-    	glm::quat q = glm::angleAxis(0.0f, glm::vec3(0,1,0)) * glm::angleAxis(0.0f, glm::vec3(1,0,0));
+    	// setup mvp matrix
+
+    	float azimuth, pitch, roll;
+    	_context->getLookatAngles(azimuth, pitch, roll);
+
+    	glm::quat q = glm::angleAxis(azimuth, glm::vec3(0,1,0)) * glm::angleAxis(roll, glm::vec3(1,0,0));
     	glm::vec3 forwardDir = q * glm::vec3(0,0,-1);
 
-    	glm::quat q1 = glm::angleAxis(0.0f, glm::vec3(0,0,1));
+    	glm::quat q1 = glm::angleAxis(pitch, glm::vec3(0,0,1));
 
     	// adjust the horizontal distance for IPD too.
     	glm::vec3 eyePos = glm::vec3(0,0,1.7);

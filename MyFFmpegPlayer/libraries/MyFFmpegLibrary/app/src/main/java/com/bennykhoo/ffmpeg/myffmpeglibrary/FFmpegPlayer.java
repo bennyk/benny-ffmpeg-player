@@ -431,4 +431,9 @@ public class FFmpegPlayer {
         setIPDPxNative(ipdPx);
     }
 
+    private native void setLookatAnglesNative(float azimuth, float pitch, float roll);
+    public void setLookatAngles(float azimuth, float pitch, float roll) {
+        setLookatAnglesNative(azimuth, pitch, roll);
+    }
+
 }

@@ -3054,3 +3054,9 @@ void jni_player_set_ipd_pixels(JNIEnv *env, jobject thiz, int ipdPx) {
 	pthread_mutex_unlock(&player->mutex_queue);
 }
 
+void jni_player_set_lookat_angles(JNIEnv *env, jobject thiz, jfloat azimuth, jfloat pitch, jfloat roll) {
+	struct Player *player = player_get_player_field(env, thiz);
+	glcontext_setLookatAngles(player->glcontext, azimuth, pitch, roll);
+}
+
+

@@ -941,15 +941,6 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 			"player_decode_video Decoded video frame: %f, time_base: %" SCNd64,
 			time/1000000.0, pts);
 
-#ifdef MEASURE_TIME
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec2);
-	diff = timespec_diff(start_time, timespec2);
-	LOGI(1, "MEASURE_TIME total decode video timediff: %d.%9ld", diff.tv_sec, diff.tv_nsec);
-#endif // MEASURE_TIME
-
-	player_wait_for_frame(player, time, stream_no);
-
-
 #ifdef SUBTITLES
 
 	if ((player->subtitle_stream_no >= 0)) {
@@ -1032,11 +1023,23 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 	}
 #endif // SUBTITLES
 
+#ifdef MEASURE_TIME
+	// start measuring time taken to do opengl rendering.
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec1);
+#endif // MEASURE_TIME
+
 	glcontext_draw_frame(player->glcontext, out_frame->data[0], ctx->width, ctx->height );
+
 	int status = glcontext_swapBuffer(player->glcontext);
 	if (status < 0) {
 		LOGE(1, "eglSwapBuffers() returned error %d", eglGetError());
 	}
+
+#ifdef MEASURE_TIME
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec2);
+	diff = timespec_diff(timespec1, timespec2);
+	LOGI(1, "MEASURE_TIME opengl timediff: %d.%9ld", diff.tv_sec, diff.tv_nsec);
+#endif // MEASURE_TIME
 
 	// increment fps counter
 	if (player->fpsCounter != NULL) {
@@ -1046,6 +1049,14 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 			player_update_fps(&state);
 		}
 	}
+
+#ifdef MEASURE_TIME
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec2);
+	diff = timespec_diff(start_time, timespec2);
+	LOGI(1, "MEASURE_TIME total decode video timediff: %d.%9ld", diff.tv_sec, diff.tv_nsec);
+#endif // MEASURE_TIME
+
+	player_wait_for_frame(player, time, stream_no);
 
 	return 0;
 

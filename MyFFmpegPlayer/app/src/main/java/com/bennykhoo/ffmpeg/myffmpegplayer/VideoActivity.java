@@ -63,6 +63,7 @@ import com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegListener;
 import com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegPlayer;
 import com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegStreamInfo;
 import com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegStreamInfo.CodecType;
+import com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegSurfaceView;
 import com.bennykhoo.ffmpeg.myffmpeglibrary.NotPlayingException;
 
 import org.json.JSONObject;
@@ -171,10 +172,17 @@ public class VideoActivity extends Activity implements OnClickListener,
         mMpegPlayer = new FFmpegPlayer(this);
 		mMpegPlayer.setMpegListener(this);
 
-        SurfaceView surfaceView = (SurfaceView) this.findViewById(R.id.video_view);
+        // setup listener to setup data source once a surface is created.
+        // This is done so to avoid race issue between surface creation and player setting data source threads.
+        FFmpegSurfaceView surfaceView = (FFmpegSurfaceView) this.findViewById(R.id.video_view);
+        surfaceView.listener = new FFmpegSurfaceView.Listener() {
+            @Override
+            public void surfaceCreated() {
+                setDataSource();
+            }
+        };
 
         mMpegPlayer.attachView((FFmpegDisplay) surfaceView);
-		setDataSource();
 
         // container for our multi surface views
         mVideoView = surfaceView;

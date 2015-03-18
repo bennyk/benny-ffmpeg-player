@@ -37,6 +37,8 @@ public class FFmpegSurfaceView extends SurfaceView implements FFmpegDisplay,
 	private FFmpegPlayer mMpegPlayer = null;
 	private boolean mCreated = false;
 
+    public Listener listener = null;
+
 	public FFmpegSurfaceView(Context context) {
 		this(context, null, 0);
 	}
@@ -77,6 +79,10 @@ public class FFmpegSurfaceView extends SurfaceView implements FFmpegDisplay,
 		Surface surface = holder.getSurface();
         mMpegPlayer.attachSurface1(surface);
 		mCreated = true;
+
+        if (listener != null) {
+            listener.surfaceCreated();
+        }
 	}
 
 	@Override
@@ -84,5 +90,9 @@ public class FFmpegSurfaceView extends SurfaceView implements FFmpegDisplay,
 		this.mMpegPlayer.renderFrameStop();
 		mCreated = false;
 	}
+
+    public interface Listener {
+        void surfaceCreated();
+    }
 
 }

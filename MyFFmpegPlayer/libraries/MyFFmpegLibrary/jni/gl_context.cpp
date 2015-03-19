@@ -2,22 +2,19 @@
 
 #define LOG_TAG "gl_context.cpp"
 
-#include "TestRenderer.hpp"
-#include "FrameRenderer.hpp"
-#include "AnaglyphicRenderer.hpp"
+#include "RGBFrameShader.hpp"
+#include "AnaglyphicShader.hpp"
+#include "TestShader.hpp"
 
-GlContext::GlContext(int frameWidth, int frameHeight)
+GlContext::GlContext()
 : _window(0), _display(0), _surface(0), _context(0), _renderer(0), _width(0), _height(0), stereoMode(true)
 {
-	_renderer = new framerenderer::FrameRenderer(this, frameWidth, frameHeight);
-//	_renderer = new anaglyphicrenderer::AnaglyphicRenderer(this, frameWidth, frameHeight);
-//	_renderer = new testrenderer::TestRenderer(this);
 }
 
 GlContext::~GlContext()
 {}
 
-bool GlContext::initialize(ANativeWindow *window)
+bool GlContext::initialize(ANativeWindow *window, int frameWidth, int frameHeight, AVPixelFormat pix_fmt)
 {
     EGLDisplay display;
     EGLConfig config;
@@ -152,6 +149,12 @@ bool GlContext::initialize(ANativeWindow *window)
     }
 
     LOG_INFO("Version: %s GLSL: %s", glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+    // GlContext is initialized properly. Start initializing shader here
+    _renderer = new rgbframeshader::RGBFrameShader(this, frameWidth, frameHeight, pix_fmt);
+//    _renderer = new anaglyphicshader::AnaglyphicShader(this, frameWidth, frameHeight, pix_fmt);
+//    _renderer = new testshader::TestShader(this);
+
     return _renderer->initialize();
 }
 
@@ -187,8 +190,8 @@ void GlContext::draw() {
     }
 }
 
-void GlContext::bindRGBA(const uint8_t *src, int width, int height) {
-	_renderer->bindRGBA(src, width, height);
+bool GlContext::bindFrame(AVFrame *frame) {
+	return _renderer->bindFrame(frame);
 }
 
 bool GlContext::swapBuffer() {
@@ -220,21 +223,21 @@ void GlContext::setIPDDistancePx(unsigned ipdPx)
 	_rightChannel.halfIPDDistancePx = ipdPx/2;
 }
 
-GlContext *glcontext_initialize(ANativeWindow *window, int frameWidth, int frameHeight)
+GlContext *glcontext_initialize(ANativeWindow *window, int frameWidth, int frameHeight, AVPixelFormat pix_fmt)
 {
-	GlContext *aobj = new GlContext(frameWidth, frameHeight);
-	if (aobj->initialize(window)) {
+	GlContext *aobj = new GlContext();
+	if (aobj->initialize(window, frameWidth, frameHeight, pix_fmt)) {
 		return aobj;
 	}
 	return NULL;
 }
 
-void glcontext_draw_frame(GlContext *context,
-		const uint8_t *src, int width, int height)
+void glcontext_draw_frame(GlContext *context, AVFrame *frame)
 {
 //	LOG_INFO("draw frame src %x with %dx%d", src, width, height);
-	context->bindRGBA(src, width, height);
-	context->draw();
+	if (context->bindFrame(frame)) {
+		context->draw();
+	}
 }
 
 int glcontext_swapBuffer(GlContext *context)

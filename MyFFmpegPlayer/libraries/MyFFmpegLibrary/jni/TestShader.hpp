@@ -9,7 +9,7 @@
 
 #include <vector>
 
-namespace anaglyphicrenderer {
+namespace testshader {
 
 using namespace lynda;
 using namespace std;
@@ -49,26 +49,20 @@ const char * vert = GLSL(100,
 
 const char * frag = GLSL(100,
 
-  uniform sampler2D texture;                        //<-- The texture itself
-  uniform bool renderLeftFrame;
+  uniform sampler2D texture;                       //<-- The texture itself
 
-  varying lowp vec2 texCoord;                            //<-- coordinate passed in from vertex shader
+  varying lowp vec2 texCoord;                           //<-- coordinate passed in from vertex shader
 
   void main(void){
-      lowp vec4 texColor = texture2D( texture, texCoord );
-      if (renderLeftFrame) {
-      	  gl_FragColor = vec4(texColor.r, 0.0, 0.0, 1.0);
-  	  } else {
-  		  gl_FragColor = vec4(0.0, texColor.gb, 1.0);
-  	  }
+    gl_FragColor = texture2D( texture, texCoord ); //<-- look up the coordinate's value
   }
 
 );
 
-struct AnaglyphicRenderer : GlContextRenderer{
+struct TestShader : GlContextRenderer{
     Shader * shader;
 
-    GLuint tID = 0;
+    GLuint tID;
     GLuint arrayID;
     GLuint bufferID, elementID;
     GLuint positionID;
@@ -76,29 +70,26 @@ struct AnaglyphicRenderer : GlContextRenderer{
     GLuint samplerID;
 
     //ID of Uniforms
-    GLuint modelID, viewID, projectionID, renderLeftFrameID;
+    GLuint modelID, viewID, projectionID;
 
-    GLuint frameWidth, frameHeight;
+    vector<vec4> pixels;
+    const int tw = 40;
+    const int th = 40;
 
-    AnaglyphicRenderer(GlContext *context, int fWidth, int fHeight)
-    : GlContextRenderer(context), frameWidth(fWidth), frameHeight(fHeight)
-    {
-    }
+    TestShader(GlContext *context) : GlContextRenderer(context) {}
 
     virtual bool initialize(){
-  	  LOG_INFO("init FrameRenderer");
+  	  LOG_INFO("init TestRenderer");
 
       /*-----------------------------------------------------------------------------
        *  A slab is just a rectangle with texture coordinates
        *-----------------------------------------------------------------------------*/
        //                  position      texture coord
-
-  	  float frameRatio = (float)frameWidth/frameHeight;
         Vertex slab[] = {
-                          {vec2(-frameRatio,-1), vec2(0,1)}, //bottom-left
-                          {vec2(-frameRatio, 1), vec2(0,0)}, //top-left
-                          {vec2( frameRatio, 1), vec2(1,0)}, //top-right
-                          {vec2( frameRatio,-1), vec2(1,1)}  //bottom-right
+                          {vec2(-.8,-.8), vec2(0,0)}, //bottom-left
+                          {vec2(-.8, .8), vec2(0,1)}, //top-left
+                          {vec2( .8, .8), vec2(1,1)}, //top-right
+                          {vec2( .8,-.8), vec2(1,0)}  //bottom-right
                         };
 
         GLubyte indices[] = {0,1,2, // first triangle (bottom left - top left - top right)
@@ -119,7 +110,6 @@ struct AnaglyphicRenderer : GlContextRenderer{
         modelID = glGetUniformLocation(shader -> id(), "model");
         viewID = glGetUniformLocation(shader -> id(), "view");
         projectionID = glGetUniformLocation(shader -> id(), "projection");
-        renderLeftFrameID = glGetUniformLocation(shader -> id(), "renderLeftFrame");
 
         /*-----------------------------------------------------------------------------
          *  Generate And Bind Vertex Array Object
@@ -156,9 +146,22 @@ struct AnaglyphicRenderer : GlContextRenderer{
                                (void*) sizeof(vec2) );
 
         /*-----------------------------------------------------------------------------
+         *  Make some rgba data (can also load a file here)
+         *-----------------------------------------------------------------------------*/
+        bool checker = false;
+        for (int i=0;i<tw;++i){
+          float tu = (float)i/tw;
+          for (int j=0;j<th;++j){
+            float tv = (float)j/th;
+            pixels.push_back( vec4(tu,0,tv,checker) );
+            checker = !checker;
+          }
+          checker = !checker;
+        }
+
+        /*-----------------------------------------------------------------------------
          *  Generate Texture and Bind it
          *-----------------------------------------------------------------------------*/
-//        glEnable(GL_TEXTURE_2D);
         glGenTextures(1, &tID);
         glBindTexture(GL_TEXTURE_2D, tID);
 
@@ -166,7 +169,27 @@ struct AnaglyphicRenderer : GlContextRenderer{
          *  Allocate Memory on the GPU
          *-----------------------------------------------------------------------------*/
          // target | lod | internal_format | width | height | border | format | type | data
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, frameWidth, frameHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tw, th, 0, GL_RGBA, GL_FLOAT, NULL);
+
+        /*-----------------------------------------------------------------------------
+         *  Load data onto GPU
+         *-----------------------------------------------------------------------------*/
+        // target | lod | xoffset | yoffset | width | height | format | type | data
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tw, th, GL_RGBA, GL_FLOAT, &(pixels[0]) );
+
+        //Mipmaps are good -- the regenerate the texture at various scales
+        // and are necessary to avoid black screen if texParameters below are not set
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        // Set these parameters to avoid a black screen
+        // caused by improperly mipmapped textures
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        /*-----------------------------------------------------------------------------
+         *  Unbind texture
+         *-----------------------------------------------------------------------------*/
+        glBindTexture(GL_TEXTURE_2D, 0);
 
         /*-----------------------------------------------------------------------------
          *  Unbind Vertex Array Object and the Vertex Array Buffer
@@ -177,34 +200,10 @@ struct AnaglyphicRenderer : GlContextRenderer{
         return true;
     }
 
-    virtual void bindRGBA(const uint8_t *data, int width, int height){
-
-        glBindTexture(GL_TEXTURE_2D, tID);
-
-        /*-----------------------------------------------------------------------------
-         *  Load data onto GPU
-         *-----------------------------------------------------------------------------*/
-        // target | lod | xoffset | yoffset | width | height | format | type | data
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data );
-
-        //mipmaps generation is slow and can cause drastic reduction of frame rate down to sub 10fps.
-
-        //Mipmaps are good -- the regenerate the texture at various scales
-        // and are necessary to avoid black screen if texParameters below are not set
-//    	glHint(GL_GENERATE_MIPMAP_HINT, GL_FASTEST);
-//        glGenerateMipmap(GL_TEXTURE_2D);
-
-        // Set these parameters to avoid a black screen
-        // caused by improperly mipmapped textures
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        /*-----------------------------------------------------------------------------
-         *  Unbind texture
-         *-----------------------------------------------------------------------------*/
-
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
+	virtual bool bindFrame(AVFrame *frame) {
+		// no-op
+		return true;
+	}
 
     virtual void onDraw(ParcelInfo channelInfo){
     	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -214,8 +213,6 @@ struct AnaglyphicRenderer : GlContextRenderer{
     	glBindTexture( GL_TEXTURE_2D, tID );   //<-- 2. Bind Texture
 
     	BINDVERTEXARRAY(arrayID);              //<-- 3. Bind VAO
-
-    	// setup mvp matrix
 
     	float azimuth, pitch, roll;
     	_context->getLookatAngles(azimuth, pitch, roll);
@@ -238,13 +235,8 @@ struct AnaglyphicRenderer : GlContextRenderer{
     	glm::mat4 model;
     	glUniformMatrix4fv( modelID, 1, GL_FALSE, glm::value_ptr(model) );
 
-    	if (channelInfo.tag == LEFT_CHANNEL) {
-    		glUniform1i(renderLeftFrameID, true);
-    	} else {
-    		glUniform1i(renderLeftFrameID, false);
-    	}
-
-    	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  //<-- 4. Draw the four slab vertices
+    	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+    	//      glDrawArrays( GL_QUADS, 0, 4);         //<-- 4. Draw the four slab vertices
     	BINDVERTEXARRAY(0);                    //<-- 5. Unbind the VAO
 
     	glBindTexture( GL_TEXTURE_2D, 0);      //<-- 6. Unbind the texture

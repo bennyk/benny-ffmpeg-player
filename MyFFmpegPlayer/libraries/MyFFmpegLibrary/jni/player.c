@@ -841,7 +841,6 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 	AVStream * stream = player->input_streams[stream_no];
 	int interrupt_ret;
 	int to_write;
-	AVFrame *rgb_frame = player->rgb_frame;
 
 	// TODO may need to remove this hard-code in future.
 
@@ -876,60 +875,6 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 
 	// saving in buffer converted video frame
 	LOGI(7, "player_decode_video copy wait");
-
-#ifdef MEASURE_TIME
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec1);
-#endif // MEASURE_TIME
-	LOGI(7, "player_decode_video copying...");
-	AVFrame * out_frame = player->tmp_frame2;
-
-	enum PixelFormat out_format;
-	int32_t format = ANativeWindow_getFormat(player->window1);
-	if (format == WINDOW_FORMAT_RGBA_8888) {
-		out_format = PIX_FMT_RGBA;
-		LOGI(6, "Format: WINDOW_FORMAT_RGBA_8888");
-	} else if (format == WINDOW_FORMAT_RGBX_8888) {
-		out_format = PIX_FMT_RGB0;
-		LOGE(1, "Format: WINDOW_FORMAT_RGBX_8888 (not supported)");
-	} else if (format == WINDOW_FORMAT_RGB_565) {
-		out_format = PIX_FMT_RGB565;
-		LOGE(1, "Format: WINDOW_FORMAT_RGB_565 (not supported)");
-	} else {
-		LOGE(1, "Unknown window format");
-	}
-
-	if (ctx->pix_fmt == PIX_FMT_YUV420P) {
-		__I420ToARGB(frame->data[0], frame->linesize[0], frame->data[2],
-				frame->linesize[2], frame->data[1], frame->linesize[1],
-				out_frame->data[0], out_frame->linesize[0], ctx->width,
-				ctx->height);
-	} else if (ctx->pix_fmt == PIX_FMT_NV12) {
-		__NV21ToARGB(frame->data[0], frame->linesize[0], frame->data[1],
-				frame->linesize[1], out_frame->data[0], out_frame->linesize[0],
-				ctx->width, ctx->height);
-	} else {
-		LOGI(3, "Using slow conversion: %d ", ctx->pix_fmt);
-		struct SwsContext *sws_context = player->sws_context;
-		sws_context = sws_getCachedContext(sws_context, ctx->width, ctx->height,
-				ctx->pix_fmt, ctx->width, ctx->height, out_format,
-				SWS_FAST_BILINEAR, NULL, NULL, NULL);
-		player->sws_context = sws_context;
-		if (sws_context == NULL) {
-			LOGE(1, "could not initialize conversion context from: %d"
-			", to :%d\n", ctx->pix_fmt, out_format);
-			// TODO some error
-		}
-		sws_scale(sws_context, (const uint8_t * const *) frame->data,
-				frame->linesize, 0, ctx->height, out_frame->data,
-				out_frame->linesize);
-	}
-
-#ifdef MEASURE_TIME
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec2);
-	diff = timespec_diff(timespec1, timespec2);
-	LOGI(1,
-			"MEASURE_TIME yuv_color timediff: %d.%9ld", diff.tv_sec, diff.tv_nsec);
-#endif // MEASURE_TIME
 
 	//int64_t pts = av_frame_get_best_effort_timestamp(frame);
 	int64_t pts = frame->best_effort_timestamp;
@@ -1028,7 +973,7 @@ int player_decode_video(struct DecoderData * decoder_data, JNIEnv * env,
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespec1);
 #endif // MEASURE_TIME
 
-	glcontext_draw_frame(player->glcontext, out_frame->data[0], ctx->width, ctx->height );
+	glcontext_draw_frame(player->glcontext, frame);
 
 	int status = glcontext_swapBuffer(player->glcontext);
 	if (status < 0) {
@@ -1108,7 +1053,12 @@ void * player_decode(void * data) {
 	}
 
 	if (codec_type == AVMEDIA_TYPE_VIDEO) {
-		GlContext *glcontext = glcontext_initialize(player->window1, ctx->width, ctx->height);
+		if (player->window1 == NULL) {
+			LOGE(10, "null window. Player not properly initialized!");
+			err = -ERROR_COULD_NOT_ATTACH_THREAD;
+			goto end;
+		}
+		GlContext *glcontext = glcontext_initialize(player->window1, ctx->width, ctx->height, ctx->pix_fmt);
 		if (glcontext == NULL) {
 			LOGI(10, "Failed to initialize GL context");
 			err = -ERROR_COULD_NOT_ATTACH_THREAD;

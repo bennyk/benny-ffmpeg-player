@@ -7,9 +7,11 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
+#include "RGBFrameRenderer.hpp"
+
 #include <vector>
 
-namespace testrenderer {
+namespace rgbframeshader {
 
 using namespace lynda;
 using namespace std;
@@ -59,10 +61,10 @@ const char * frag = GLSL(100,
 
 );
 
-struct TestRenderer : GlContextRenderer{
+struct RGBFrameShader : RGBFrameRenderer{
     Shader * shader;
 
-    GLuint tID;
+    GLuint tID = 0;
     GLuint arrayID;
     GLuint bufferID, elementID;
     GLuint positionID;
@@ -72,24 +74,24 @@ struct TestRenderer : GlContextRenderer{
     //ID of Uniforms
     GLuint modelID, viewID, projectionID;
 
-    vector<vec4> pixels;
-    const int tw = 40;
-    const int th = 40;
-
-    TestRenderer(GlContext *context) : GlContextRenderer(context) {}
+    RGBFrameShader(GlContext *context, int frameWidth, int frameHeight, AVPixelFormat pix_fmt)
+    : RGBFrameRenderer(context, frameWidth, frameHeight, pix_fmt)
+    {
+    }
 
     virtual bool initialize(){
-  	  LOG_INFO("init TestRenderer");
 
       /*-----------------------------------------------------------------------------
        *  A slab is just a rectangle with texture coordinates
        *-----------------------------------------------------------------------------*/
        //                  position      texture coord
+
+  	  float frameRatio = (float)_frameWidth/_frameHeight;
         Vertex slab[] = {
-                          {vec2(-.8,-.8), vec2(0,0)}, //bottom-left
-                          {vec2(-.8, .8), vec2(0,1)}, //top-left
-                          {vec2( .8, .8), vec2(1,1)}, //top-right
-                          {vec2( .8,-.8), vec2(1,0)}  //bottom-right
+                          {vec2(-frameRatio,-1), vec2(0,1)}, //bottom-left
+                          {vec2(-frameRatio, 1), vec2(0,0)}, //top-left
+                          {vec2( frameRatio, 1), vec2(1,0)}, //top-right
+                          {vec2( frameRatio,-1), vec2(1,1)}  //bottom-right
                         };
 
         GLubyte indices[] = {0,1,2, // first triangle (bottom left - top left - top right)
@@ -146,22 +148,9 @@ struct TestRenderer : GlContextRenderer{
                                (void*) sizeof(vec2) );
 
         /*-----------------------------------------------------------------------------
-         *  Make some rgba data (can also load a file here)
-         *-----------------------------------------------------------------------------*/
-        bool checker = false;
-        for (int i=0;i<tw;++i){
-          float tu = (float)i/tw;
-          for (int j=0;j<th;++j){
-            float tv = (float)j/th;
-            pixels.push_back( vec4(tu,0,tv,checker) );
-            checker = !checker;
-          }
-          checker = !checker;
-        }
-
-        /*-----------------------------------------------------------------------------
          *  Generate Texture and Bind it
          *-----------------------------------------------------------------------------*/
+//        glEnable(GL_TEXTURE_2D);
         glGenTextures(1, &tID);
         glBindTexture(GL_TEXTURE_2D, tID);
 
@@ -169,27 +158,7 @@ struct TestRenderer : GlContextRenderer{
          *  Allocate Memory on the GPU
          *-----------------------------------------------------------------------------*/
          // target | lod | internal_format | width | height | border | format | type | data
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tw, th, 0, GL_RGBA, GL_FLOAT, NULL);
-
-        /*-----------------------------------------------------------------------------
-         *  Load data onto GPU
-         *-----------------------------------------------------------------------------*/
-        // target | lod | xoffset | yoffset | width | height | format | type | data
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tw, th, GL_RGBA, GL_FLOAT, &(pixels[0]) );
-
-        //Mipmaps are good -- the regenerate the texture at various scales
-        // and are necessary to avoid black screen if texParameters below are not set
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        // Set these parameters to avoid a black screen
-        // caused by improperly mipmapped textures
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-        /*-----------------------------------------------------------------------------
-         *  Unbind texture
-         *-----------------------------------------------------------------------------*/
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _frameWidth, _frameHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
         /*-----------------------------------------------------------------------------
          *  Unbind Vertex Array Object and the Vertex Array Buffer
@@ -200,11 +169,37 @@ struct TestRenderer : GlContextRenderer{
         return true;
     }
 
-	virtual void bindRGBA(const uint8_t *data, int width, int height) {
-		// no-op
-	}
+    virtual bool bindRGBA(const uint8_t *data, int linesize) {
+        glBindTexture(GL_TEXTURE_2D, tID);
 
-    virtual void onDraw(){
+        /*-----------------------------------------------------------------------------
+         *  Load data onto GPU
+         *-----------------------------------------------------------------------------*/
+        // target | lod | xoffset | yoffset | width | height | format | type | data
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, linesize/4, _frameHeight, GL_RGBA, GL_UNSIGNED_BYTE, data );
+
+        //mipmaps generation is slow and can cause drastic reduction of frame rate down to sub 10fps.
+
+        //Mipmaps are good -- the regenerate the texture at various scales
+        // and are necessary to avoid black screen if texParameters below are not set
+//    	glHint(GL_GENERATE_MIPMAP_HINT, GL_FASTEST);
+//        glGenerateMipmap(GL_TEXTURE_2D);
+
+        // Set these parameters to avoid a black screen
+        // caused by improperly mipmapped textures
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        /*-----------------------------------------------------------------------------
+         *  Unbind texture
+         *-----------------------------------------------------------------------------*/
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        return true;
+    }
+
+    virtual void onDraw(ParcelInfo channelInfo){
     	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -213,16 +208,22 @@ struct TestRenderer : GlContextRenderer{
 
     	BINDVERTEXARRAY(arrayID);              //<-- 3. Bind VAO
 
-    	glm::quat q = glm::angleAxis(0.0f, glm::vec3(0,1,0)) * glm::angleAxis(0.0f, glm::vec3(1,0,0));
+    	// setup mvp matrix
+
+    	float azimuth, pitch, roll;
+    	_context->getLookatAngles(azimuth, pitch, roll);
+
+    	glm::quat q = glm::angleAxis(azimuth, glm::vec3(0,1,0)) * glm::angleAxis(roll, glm::vec3(1,0,0));
     	glm::vec3 forwardDir = q * glm::vec3(0,0,-1);
 
-    	glm::quat q1 = glm::angleAxis(0.0f, glm::vec3(0,0,1));
+    	glm::quat q1 = glm::angleAxis(pitch, glm::vec3(0,0,1));
 
     	// adjust the horizontal distance for IPD too.
-    	glm::vec3 eyePos = glm::vec3(0,0,1);
+//    	LOG_INFO("ipd ratio %.2f", channelInfo.getHalfIPDOffsetRatio());
+    	glm::vec3 eyePos = glm::vec3(channelInfo.getHalfIPDOffsetRatio(),0,1.7);
     	glm::mat4 view = glm::lookAt( eyePos, eyePos+forwardDir, q1 * glm::vec3(0,1,0) );
 
-    	glm::mat4 proj = glm::perspective( 3.14f / 3.f, _context->aspectRatio(), 0.1f,-10.f);
+    	glm::mat4 proj = glm::perspective( 3.14f / 3.f, channelInfo.aspectRatio(), 1.f,10.f);
 
     	glUniformMatrix4fv( viewID, 1, GL_FALSE, glm::value_ptr(view) );
     	glUniformMatrix4fv( projectionID, 1, GL_FALSE, glm::value_ptr(proj) );
@@ -230,8 +231,7 @@ struct TestRenderer : GlContextRenderer{
     	glm::mat4 model;
     	glUniformMatrix4fv( modelID, 1, GL_FALSE, glm::value_ptr(model) );
 
-    	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
-    	//      glDrawArrays( GL_QUADS, 0, 4);         //<-- 4. Draw the four slab vertices
+    	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  //<-- 4. Draw the four slab vertices
     	BINDVERTEXARRAY(0);                    //<-- 5. Unbind the VAO
 
     	glBindTexture( GL_TEXTURE_2D, 0);      //<-- 6. Unbind the texture

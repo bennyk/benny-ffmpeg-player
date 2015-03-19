@@ -9,7 +9,9 @@
 
 #include <vector>
 
-namespace framerenderer {
+#include "RGBFrameRenderer.hpp"
+
+namespace anaglyphicshader {
 
 using namespace lynda;
 using namespace std;
@@ -49,17 +51,23 @@ const char * vert = GLSL(100,
 
 const char * frag = GLSL(100,
 
-  uniform sampler2D texture;                       //<-- The texture itself
+  uniform sampler2D texture;                        //<-- The texture itself
+  uniform bool renderLeftFrame;
 
-  varying lowp vec2 texCoord;                           //<-- coordinate passed in from vertex shader
+  varying lowp vec2 texCoord;                            //<-- coordinate passed in from vertex shader
 
   void main(void){
-    gl_FragColor = texture2D( texture, texCoord ); //<-- look up the coordinate's value
+      lowp vec4 texColor = texture2D( texture, texCoord );
+      if (renderLeftFrame) {
+      	  gl_FragColor = vec4(texColor.r, 0.0, 0.0, 1.0);
+  	  } else {
+  		  gl_FragColor = vec4(0.0, texColor.gb, 1.0);
+  	  }
   }
 
 );
 
-struct FrameRenderer : GlContextRenderer{
+struct AnaglyphicShader : RGBFrameRenderer{
     Shader * shader;
 
     GLuint tID = 0;
@@ -70,24 +78,21 @@ struct FrameRenderer : GlContextRenderer{
     GLuint samplerID;
 
     //ID of Uniforms
-    GLuint modelID, viewID, projectionID;
+    GLuint modelID, viewID, projectionID, renderLeftFrameID;
 
-    GLuint frameWidth, frameHeight;
-
-    FrameRenderer(GlContext *context, int fWidth, int fHeight)
-    : GlContextRenderer(context), frameWidth(fWidth), frameHeight(fHeight)
+    AnaglyphicShader(GlContext *context, int frameWidth, int frameHeight, AVPixelFormat pix_fmt)
+    : RGBFrameRenderer(context, frameWidth, frameHeight, pix_fmt)
     {
     }
 
     virtual bool initialize(){
-  	  LOG_INFO("init FrameRenderer");
 
       /*-----------------------------------------------------------------------------
        *  A slab is just a rectangle with texture coordinates
        *-----------------------------------------------------------------------------*/
        //                  position      texture coord
 
-  	  float frameRatio = (float)frameWidth/frameHeight;
+  	  float frameRatio = (float)_frameWidth/_frameHeight;
         Vertex slab[] = {
                           {vec2(-frameRatio,-1), vec2(0,1)}, //bottom-left
                           {vec2(-frameRatio, 1), vec2(0,0)}, //top-left
@@ -113,6 +118,7 @@ struct FrameRenderer : GlContextRenderer{
         modelID = glGetUniformLocation(shader -> id(), "model");
         viewID = glGetUniformLocation(shader -> id(), "view");
         projectionID = glGetUniformLocation(shader -> id(), "projection");
+        renderLeftFrameID = glGetUniformLocation(shader -> id(), "renderLeftFrame");
 
         /*-----------------------------------------------------------------------------
          *  Generate And Bind Vertex Array Object
@@ -159,7 +165,7 @@ struct FrameRenderer : GlContextRenderer{
          *  Allocate Memory on the GPU
          *-----------------------------------------------------------------------------*/
          // target | lod | internal_format | width | height | border | format | type | data
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, frameWidth, frameHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _frameWidth, _frameHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
         /*-----------------------------------------------------------------------------
          *  Unbind Vertex Array Object and the Vertex Array Buffer
@@ -170,7 +176,7 @@ struct FrameRenderer : GlContextRenderer{
         return true;
     }
 
-    virtual void bindRGBA(const uint8_t *data, int width, int height){
+    virtual bool bindRGBA(const uint8_t *data, int linesize){
 
         glBindTexture(GL_TEXTURE_2D, tID);
 
@@ -178,7 +184,7 @@ struct FrameRenderer : GlContextRenderer{
          *  Load data onto GPU
          *-----------------------------------------------------------------------------*/
         // target | lod | xoffset | yoffset | width | height | format | type | data
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data );
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, linesize/4, _frameHeight, GL_RGBA, GL_UNSIGNED_BYTE, data );
 
         //mipmaps generation is slow and can cause drastic reduction of frame rate down to sub 10fps.
 
@@ -230,6 +236,12 @@ struct FrameRenderer : GlContextRenderer{
 
     	glm::mat4 model;
     	glUniformMatrix4fv( modelID, 1, GL_FALSE, glm::value_ptr(model) );
+
+    	if (channelInfo.tag == LEFT_CHANNEL) {
+    		glUniform1i(renderLeftFrameID, true);
+    	} else {
+    		glUniform1i(renderLeftFrameID, false);
+    	}
 
     	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  //<-- 4. Draw the four slab vertices
     	BINDVERTEXARRAY(0);                    //<-- 5. Unbind the VAO

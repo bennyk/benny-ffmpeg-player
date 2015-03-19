@@ -60,6 +60,7 @@ struct RGBFrameRenderer : GlContextRenderer
 		if (pix_fmt != PIX_FMT_YUV420P && pix_fmt != PIX_FMT_NV12) {
 			LOG_WARN("Using slow conversion for non YUV pixel format: %d ", _pix_fmt);
 		}
+		LOG_INFO("using pixel format %d", pix_fmt);
 
 	}
 

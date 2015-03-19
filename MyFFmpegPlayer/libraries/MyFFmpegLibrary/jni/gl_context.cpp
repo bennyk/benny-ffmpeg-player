@@ -5,6 +5,7 @@
 #include "RGBFrameShader.hpp"
 #include "AnaglyphicShader.hpp"
 #include "TestShader.hpp"
+#include "YUVShader.hpp"
 
 GlContext::GlContext()
 : _window(0), _display(0), _surface(0), _context(0), _renderer(0), _width(0), _height(0), stereoMode(true)
@@ -154,6 +155,7 @@ bool GlContext::initialize(ANativeWindow *window, int frameWidth, int frameHeigh
     _renderer = new rgbframeshader::RGBFrameShader(this, frameWidth, frameHeight, pix_fmt);
 //    _renderer = new anaglyphicshader::AnaglyphicShader(this, frameWidth, frameHeight, pix_fmt);
 //    _renderer = new testshader::TestShader(this);
+//    _renderer = new yuvshader::YUVShader(this, frameWidth, frameHeight);
 
     return _renderer->initialize();
 }

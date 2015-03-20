@@ -215,6 +215,10 @@ public class MainActivity extends ActionBarActivity implements OnItemClickListen
                 startIPDAdjustActivity();
                 break;
 
+            case R.id.action_settings:
+                startSettingsActivity();
+                break;
+
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -278,6 +282,11 @@ public class MainActivity extends ActionBarActivity implements OnItemClickListen
 
     private void startIPDAdjustActivity() {
         Intent intent = new Intent(this, IPDAdjustActivity.class);
+        startActivity(intent);
+    }
+
+    private void startSettingsActivity() {
+        Intent intent = new Intent(this, SettingsActivity.class);
         startActivity(intent);
     }
 

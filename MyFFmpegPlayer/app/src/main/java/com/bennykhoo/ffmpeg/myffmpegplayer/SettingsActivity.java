@@ -70,17 +70,17 @@ public class SettingsActivity extends ActionBarActivity {
         ArrayList<SettingItem> data = new ArrayList<>();
 
         SettingItem myItem = new SettingItem("Shader mode", SettingsBook.SETTINGS_SHADER_MODE);
-        myItem.add(new EnumItem("Auto", 0));
-        myItem.add(new EnumItem("Normal", 1));
-        myItem.add(new EnumItem("Anaglyphic", 2));
-        myItem.add(new EnumItem("YUV", 3));
-        myItem.add(new EnumItem("Test", 4));
+        myItem.add(new EnumItem("Auto", 0, "Automatically select the best shader for the job."));
+        myItem.add(new EnumItem("Normal", 1, "Use ffmpeg scaler to convert pixel format to RGB format prior to rendering."));
+        myItem.add(new EnumItem("Anaglyphic", 2, "Render video as classical Anaglyphic 3D in SBS mode."));
+        myItem.add(new EnumItem("YUV", 3, "Use YUV shader to enable direct mapping of YUV based video to GPU for performance."));
+        myItem.add(new EnumItem("Test", 4, "Generate checkerboard test pattern."));
         data.add(myItem);
 
 
         myItem = new SettingItem("Screen mode", SettingsBook.SETTINGS_SCREEN_MODE);
-        myItem.add(new EnumItem("Stereoscopic", 0));
-        myItem.add(new EnumItem("Full screen", 1));
+        myItem.add(new EnumItem("Stereoscopic", 0, "Render video as SBS (Side-by-Side) display format with IPD offset."));
+        myItem.add(new EnumItem("Full screen", 1, "Full screen mode."));
         data.add(myItem);
 
         return data;
@@ -90,12 +90,14 @@ public class SettingsActivity extends ActionBarActivity {
     class EnumItem {
         public String title;
         Integer value;
+        private final String comment;
 
         public View cachedView;
 
-        EnumItem(String title, Integer value) {
+        EnumItem(String title, Integer value, String comment) {
             this.title = title;
             this.value = value;
+            this.comment = comment;
         }
     }
 
@@ -186,6 +188,9 @@ public class SettingsActivity extends ActionBarActivity {
 
                 text = (RadioButton) currentView.findViewById(R.id.textView1);
                 text.setText(currentItem.title);
+
+                TextView comment = (TextView) currentView.findViewById(R.id.comment);
+                comment.setText(currentItem.comment);
 
                 if (childPosition == childGroup.currentIndex) {
                     text.setChecked(true);

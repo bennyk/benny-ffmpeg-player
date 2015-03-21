@@ -79,12 +79,13 @@ public class FFmpegPlayer {
 			Integer videoStream = (Integer) params[2];
 			Integer audioStream = (Integer) params[3];
 			Integer subtitleStream = (Integer) params[4];
+            int [] options = (int[]) params[5];
 			
 			int videoStreamNo = videoStream == null ? -1 : videoStream.intValue();
 			int audioStreamNo = audioStream == null ? -1 : audioStream.intValue();
 			int subtitleStreamNo = subtitleStream == null ? -1 : subtitleStream.intValue();
 			
-			int err = player.setDataSourceNative(url, map, videoStreamNo, audioStreamNo, subtitleStreamNo);
+			int err = player.setDataSourceNative(url, map, videoStreamNo, audioStreamNo, subtitleStreamNo, options);
 			SetDataSourceTaskResult result = new SetDataSourceTaskResult();
 			if (err < 0) {
 				result.error = new FFmpegError(err);
@@ -272,7 +273,7 @@ public class FFmpegPlayer {
 
 	private native int setDataSourceNative(String url,
 			Map<String, String> dictionary, int videoStreamNo,
-			int audioStreamNo, int subtitleStreamNo);
+			int audioStreamNo, int subtitleStreamNo, int[] options);
 
 	private native void stopNative();
 
@@ -408,14 +409,14 @@ public class FFmpegPlayer {
 	}
 	
 	public void setDataSource(String url) {
-		setDataSource(url, null, UNKNOWN_STREAM, UNKNOWN_STREAM, NO_STREAM);
+		setDataSource(url, null, UNKNOWN_STREAM, UNKNOWN_STREAM, NO_STREAM, null);
 	}
 
 	public void setDataSource(String url, Map<String, String> dictionary,
-			int videoStream, int audioStream, int subtitlesStream) {
+			int videoStream, int audioStream, int subtitlesStream, int [] options) {
 		new SetDataSourceTask(this).execute(url, dictionary,
 				Integer.valueOf(videoStream), Integer.valueOf(audioStream),
-				Integer.valueOf(subtitlesStream));
+				Integer.valueOf(subtitlesStream), options);
 	}
 
 	public FFmpegListener getMpegListener() {

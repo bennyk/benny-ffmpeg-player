@@ -23,6 +23,11 @@ class GlContext;
 
 enum ChannelTag { LEFT_CHANNEL, RIGHT_CHANNEL, SINGLE_CHANNEL };
 
+enum ContextOptions { SHADER_MODE_FLAG = 1, SCREEN_MODE_FLAG, END_FLAG = 0xfeff };
+
+enum ShaderMode { SHADER_AUTO, SHADER_RGB, SHADER_ANAGLYPHIC, SHADER_YUV, SHADER_TEST, SHADER_UNKNOWN };
+enum ScreenMode { SCREEN_STEREO, SCREEN_FULL, SCREEN_UNKNOWN };
+
 struct ParcelInfo {
 	EGLint x, y, width, height;
 	ChannelTag tag;
@@ -73,7 +78,7 @@ public:
 	~GlContext();
 
 public:
-	bool initialize(ANativeWindow *window, int frameWidth, int frameHeight, AVPixelFormat pix_fmt);
+	bool initialize(ANativeWindow *window, int frameWidth, int frameHeight, AVPixelFormat pix_fmt, int *opts);
 	void draw();
 	int32_t getFormat() { return ANativeWindow_getFormat(_window); }
 	bool swapBuffer();
@@ -82,9 +87,10 @@ public:
 	void setLookatAngles(float azimuth, float pitch, float roll);
 	void getLookatAngles(float &azimuth, float &pitch, float &roll);
 	void setIPDDistancePx(unsigned ipdPx);
+	void destroy();
 
 private:
-	void destroy();
+	static void parseOptions(int *options, ShaderMode &shaderMode, ScreenMode &screenMode);
 
 public:
     int _width, _height;
@@ -116,7 +122,7 @@ typedef struct GlContextHandle GlContext;
 extern "C" {
 #endif
 
-GlContext *glcontext_initialize(ANativeWindow *window, int frameWidth, int frameHeight, enum AVPixelFormat pix_fmt);
+GlContext *glcontext_initialize(ANativeWindow *window, int frameWidth, int frameHeight, enum AVPixelFormat pix_fmt, int *options);
 void glcontext_draw_frame(GlContext *context, AVFrame *frame);
 int glcontext_swapBuffer(GlContext *context);
 void glcontext_setLookatAngles(GlContext *context, float azimuth, float pitch, float roll);

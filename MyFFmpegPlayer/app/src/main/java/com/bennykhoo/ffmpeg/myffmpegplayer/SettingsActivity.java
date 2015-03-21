@@ -56,7 +56,7 @@ public class SettingsActivity extends ActionBarActivity {
     ArrayList<SettingItem> prepareSettings() {
         ArrayList<SettingItem> data = new ArrayList<>();
 
-        SettingItem myItem = new SettingItem("Shader mode", "Settings.shaderMode");
+        SettingItem myItem = new SettingItem("Shader mode", SettingsBook.SETTINGS_SHADER_MODE);
         myItem.add(new EnumItem("Auto", 0));
         myItem.add(new EnumItem("Normal", 1));
         myItem.add(new EnumItem("Anaglyphic", 2));
@@ -65,7 +65,7 @@ public class SettingsActivity extends ActionBarActivity {
         data.add(myItem);
 
 
-        myItem = new SettingItem("Screen mode", "Settings.screenMode");
+        myItem = new SettingItem("Screen mode", SettingsBook.SETTINGS_SCREEN_MODE);
         myItem.add(new EnumItem("Stereoscopic", 0));
         myItem.add(new EnumItem("Full screen", 1));
         data.add(myItem);
@@ -118,13 +118,16 @@ public class SettingsActivity extends ActionBarActivity {
 
         void restoreSavedIndex () {
             SharedPreferences settings = getSharedPreferences(MainActivity.PREFS_NAME, 0);
-            currentIndex = settings.getInt(name, 0);
+            currentIndex = settings.getInt(name + ".index", 0);
         }
 
         void saveIndex() {
             SharedPreferences settings = getSharedPreferences(MainActivity.PREFS_NAME, 0);
             SharedPreferences.Editor editor = settings.edit();
-            editor.putInt(name, currentIndex);
+            editor.putInt(name + ".index", currentIndex);
+
+            EnumItem currentEnum = get(currentIndex);
+            editor.putInt(name + ".value", currentEnum.value);
 
             // Commit the edits!
             editor.commit();

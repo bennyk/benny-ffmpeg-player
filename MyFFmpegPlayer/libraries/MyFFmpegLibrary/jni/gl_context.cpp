@@ -15,7 +15,46 @@ GlContext::GlContext()
 GlContext::~GlContext()
 {}
 
-bool GlContext::initialize(ANativeWindow *window, int frameWidth, int frameHeight, AVPixelFormat pix_fmt)
+void GlContext::parseOptions(int *options, ShaderMode &shaderMode, ScreenMode &screenMode)
+{
+	int i = 0;
+
+	shaderMode = SHADER_AUTO;
+	screenMode = SCREEN_STEREO;
+
+	while (options[i] != END_FLAG) {
+		int flag = options[i++];
+
+		int val;
+		switch (flag) {
+		case SHADER_MODE_FLAG:
+			val = options[i++];
+			if (val >= SHADER_UNKNOWN) {
+				LOG_ERROR("invalid shader mode %d", val);
+			} else {
+				LOG_INFO("setting shader mode to %d", val);
+				shaderMode = (ShaderMode)val;
+			}
+			break;
+
+		case SCREEN_MODE_FLAG:
+			val = options[i++];
+			if (val >= SCREEN_UNKNOWN) {
+				LOG_ERROR("invalid screen mode %d", val);
+			} else {
+				LOG_INFO("setting screen mode to %d", val);
+				screenMode = (ScreenMode)val;
+			}
+			break;
+
+		default:
+			break;
+		}
+
+	}
+}
+
+bool GlContext::initialize(ANativeWindow *window, int frameWidth, int frameHeight, AVPixelFormat pix_fmt, int *opts)
 {
     EGLDisplay display;
     EGLConfig config;
@@ -138,6 +177,12 @@ bool GlContext::initialize(ANativeWindow *window, int frameWidth, int frameHeigh
 
     glEnable(GL_TEXTURE_2D);
 
+    // parse argument options
+    ShaderMode shaderMode;
+    ScreenMode screenMode;
+    parseOptions(opts, shaderMode, screenMode);
+
+    stereoMode = screenMode != SCREEN_STEREO ? false : true;
 
     if (stereoMode) {
         // setup stereoscopic mode
@@ -149,14 +194,34 @@ bool GlContext::initialize(ANativeWindow *window, int frameWidth, int frameHeigh
     	_rightChannel = ParcelInfo(0, 0, _width, _height, SINGLE_CHANNEL);
     }
 
-    LOG_INFO("Version: %s GLSL: %s", glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
-
     // GlContext is initialized properly. Start initializing shader here
-    _renderer = new rgbframeshader::RGBFrameShader(this, frameWidth, frameHeight, pix_fmt);
-//    _renderer = new anaglyphicshader::AnaglyphicShader(this, frameWidth, frameHeight, pix_fmt);
-//    _renderer = new testshader::TestShader(this);
-//    _renderer = new yuvshader::YUVShader(this, frameWidth, frameHeight);
+    switch (shaderMode) {
+    case SHADER_AUTO:
+    	if (pix_fmt == PIX_FMT_YUV420P) {
+    		_renderer = new yuvshader::YUVShader(this, frameWidth, frameHeight);
+    	} else {
+    	    _renderer = new rgbframeshader::RGBFrameShader(this, frameWidth, frameHeight, pix_fmt);
+    	}
+    	break;
 
+    case SHADER_RGB:
+	    _renderer = new rgbframeshader::RGBFrameShader(this, frameWidth, frameHeight, pix_fmt);
+	    break;
+
+    case SHADER_ANAGLYPHIC:
+    	_renderer = new anaglyphicshader::AnaglyphicShader(this, frameWidth, frameHeight, pix_fmt);
+    	break;
+
+    case SHADER_YUV:
+    	_renderer = new yuvshader::YUVShader(this, frameWidth, frameHeight);
+    	break;
+
+    case SHADER_TEST:
+    	_renderer = new testshader::TestShader(this);
+    	break;
+    }
+
+    LOG_INFO("Version: %s GLSL: %s", glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
     return _renderer->initialize();
 }
 
@@ -225,10 +290,10 @@ void GlContext::setIPDDistancePx(unsigned ipdPx)
 	_rightChannel.halfIPDDistancePx = ipdPx/2;
 }
 
-GlContext *glcontext_initialize(ANativeWindow *window, int frameWidth, int frameHeight, AVPixelFormat pix_fmt)
+GlContext *glcontext_initialize(ANativeWindow *window, int frameWidth, int frameHeight, AVPixelFormat pix_fmt, int *options)
 {
 	GlContext *aobj = new GlContext();
-	if (aobj->initialize(window, frameWidth, frameHeight, pix_fmt)) {
+	if (aobj->initialize(window, frameWidth, frameHeight, pix_fmt, options)) {
 		return aobj;
 	}
 	return NULL;

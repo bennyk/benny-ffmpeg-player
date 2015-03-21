@@ -8,6 +8,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
@@ -51,6 +52,18 @@ public class SettingsActivity extends ActionBarActivity {
 
         getSupportActionBar().setDisplayShowHomeEnabled(true);
         getSupportActionBar().setIcon(R.drawable.actionbar_space_between_icon_and_title);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+    }
+
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                // app icon in action bar clicked; goto parent activity.
+                this.finish();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     ArrayList<SettingItem> prepareSettings() {
@@ -177,6 +190,18 @@ public class SettingsActivity extends ActionBarActivity {
                 if (childPosition == childGroup.currentIndex) {
                     text.setChecked(true);
                 }
+
+                // tapping a row item should select the radio button too.
+                currentView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        RadioButton rb = (RadioButton) v.findViewById(R.id.textView1);
+                        if (!rb.isChecked()) {
+                            rb.setChecked(true);
+                        }
+
+                    }
+                });
 
                 text.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                     @Override

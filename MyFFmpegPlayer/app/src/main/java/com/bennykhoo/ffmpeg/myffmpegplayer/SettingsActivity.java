@@ -181,7 +181,7 @@ public class SettingsActivity extends ActionBarActivity {
             EnumItem currentItem = childGroup.get(childPosition);
 
             if (currentItem.cachedView == null) {
-                Log.i(TAG, "inflate pos " + groupPosition + " " + childPosition);
+//                Log.i(TAG, "inflate pos " + groupPosition + " " + childPosition);
                 View currentView = _inflater.inflate(R.layout.list_setting_item, null);
                 currentView.setTag(currentItem);
                 currentItem.cachedView = currentView;

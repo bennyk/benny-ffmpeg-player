@@ -283,7 +283,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 		mPlay = false;
 
 		mMpegPlayer.setDataSource(url, params, FFmpegPlayer.UNKNOWN_STREAM, mAudioStreamNo,
-				mSubtitleStreamNo);
+				mSubtitleStreamNo, SettingsBook.getSettingsFlags(this));
 
 	}
 

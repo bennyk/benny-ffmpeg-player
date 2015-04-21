@@ -4,10 +4,29 @@
 #include <GLES2/gl2ext.h>
 
 #ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "libavutil/frame.h"
+#include "libavutil/pixfmt.h"
+
+#ifdef __cplusplus
+}
+#endif
+
+
+//typedef struct _AVFrame AVFrame;
+
+#ifdef __cplusplus
 
 class GlContext;
 
 enum ChannelTag { LEFT_CHANNEL, RIGHT_CHANNEL, SINGLE_CHANNEL };
+
+enum ContextOptions { SHADER_MODE_FLAG = 1, SCREEN_MODE_FLAG, END_FLAG = 0xfeff };
+
+enum ShaderMode { SHADER_AUTO, SHADER_RGB, SHADER_ANAGLYPHIC, SHADER_YUV, SHADER_TEST, SHADER_UNKNOWN };
+enum ScreenMode { SCREEN_STEREO, SCREEN_FULL, SCREEN_UNKNOWN };
 
 struct ParcelInfo {
 	EGLint x, y, width, height;
@@ -48,28 +67,33 @@ struct GlContextRenderer
 
 	virtual bool initialize() = 0;
 	virtual void onDraw(ParcelInfo channelInfo) = 0;
-	virtual void bindRGBA(const uint8_t *data, int width, int height) = 0;
+	virtual bool bindFrame(AVFrame *frame) = 0;
 };
 
 class GlContext
 {
 public:
 
-	GlContext(int frameWidth, int frameHeight);
+	GlContext();
 	~GlContext();
 
 public:
-	bool initialize(ANativeWindow *window);
+	bool initialize(ANativeWindow *window, int frameWidth, int frameHeight, AVPixelFormat pix_fmt, int *opts);
 	void draw();
+	int32_t getFormat() { return ANativeWindow_getFormat(_window); }
 	bool swapBuffer();
-	void bindRGBA(const uint8_t *data, int width, int height);
+	bool bindFrame(AVFrame *frame);
 	float aspectRatio();
 	void setLookatAngles(float azimuth, float pitch, float roll);
 	void getLookatAngles(float &azimuth, float &pitch, float &roll);
 	void setIPDDistancePx(unsigned ipdPx);
+	void destroy();
 
 private:
-	void destroy();
+	static void parseOptions(int *options, ShaderMode &shaderMode, ScreenMode &screenMode);
+
+public:
+    int _width, _height;
 
 private:
     ANativeWindow* _window;
@@ -79,7 +103,6 @@ private:
     EGLContext _context;
 
     GlContextRenderer *_renderer;
-    int _width, _height;
 
     // lookAt angles in Euler format.
     float _lookatAngles[3];
@@ -99,9 +122,8 @@ typedef struct GlContextHandle GlContext;
 extern "C" {
 #endif
 
-GlContext *glcontext_initialize(ANativeWindow *window, int frameWidth, int frameHeight);
-void glcontext_draw_frame(GlContext *context,
-		const uint8_t *src, int width, int height);
+GlContext *glcontext_initialize(ANativeWindow *window, int frameWidth, int frameHeight, enum AVPixelFormat pix_fmt, int *options);
+void glcontext_draw_frame(GlContext *context, AVFrame *frame);
 int glcontext_swapBuffer(GlContext *context);
 void glcontext_setLookatAngles(GlContext *context, float azimuth, float pitch, float roll);
 void glcontext_setIPDDistancePx(GlContext *context, unsigned ipdPx);

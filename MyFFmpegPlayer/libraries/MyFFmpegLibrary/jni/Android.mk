@@ -23,7 +23,7 @@ LOCAL_LDLIBS += -lEGL -lGLESv2
 LOCAL_SRC_FILES:= ffmpeg-jni.c fps.c player.c queue.c helpers.c convert.cpp jni-protocol.c gl_context.cpp
 LOCAL_PRELINK_MODULE := false
 
-LOCAL_CFLAGS += -DLIBYUV -DGL_GLEXT_PROTOTYPES -fexceptions
+LOCAL_CFLAGS += -DLIBYUV -DGL_GLEXT_PROTOTYPES -fexceptions -D__STDC_CONSTANT_MACROS
 #-DMEASURE_TIME
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libyuv/include
 LOCAL_CPP_INCLUDES += $(LOCAL_PATH)/libyuv/include

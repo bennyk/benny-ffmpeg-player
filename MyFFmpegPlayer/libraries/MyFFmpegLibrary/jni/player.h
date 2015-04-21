@@ -124,7 +124,7 @@ void jni_player_resume(JNIEnv *env, jobject thiz);
 
 int jni_player_set_data_source(JNIEnv *env, jobject thiz, jstring string,
 		jobject dictionary, int video_stream_no, int audio_stream_no,
-		int subtitle_stream_no);
+		int subtitle_stream_no, jintArray options);
 void jni_player_stop(JNIEnv *env, jobject thiz);
 
 void jni_player_render_frame_start(JNIEnv *env, jobject thiz);
@@ -145,7 +145,7 @@ static JNINativeMethod player_methods[] = {
 	{"pauseNative", "()V", (void*) jni_player_pause},
 	{"resumeNative", "()V", (void*) jni_player_resume},
 
-	{"setDataSourceNative", "(Ljava/lang/String;Ljava/util/Map;III)I", (void*) jni_player_set_data_source},
+	{"setDataSourceNative", "(Ljava/lang/String;Ljava/util/Map;III[I)I", (void*) jni_player_set_data_source},
 	{"stopNative", "()V", (void*) jni_player_stop},
 
 	{"renderFrameStart", "()V", (void*) jni_player_render_frame_start},

@@ -2,22 +2,59 @@
 
 #define LOG_TAG "gl_context.cpp"
 
-#include "TestRenderer.hpp"
-#include "FrameRenderer.hpp"
-#include "AnaglyphicRenderer.hpp"
+#include "RGBFrameShader.hpp"
+#include "AnaglyphicShader.hpp"
+#include "TestShader.hpp"
+#include "YUVShader.hpp"
 
-GlContext::GlContext(int frameWidth, int frameHeight)
+GlContext::GlContext()
 : _window(0), _display(0), _surface(0), _context(0), _renderer(0), _width(0), _height(0), stereoMode(true)
 {
-	_renderer = new framerenderer::FrameRenderer(this, frameWidth, frameHeight);
-//	_renderer = new anaglyphicrenderer::AnaglyphicRenderer(this, frameWidth, frameHeight);
-//	_renderer = new testrenderer::TestRenderer(this);
 }
 
 GlContext::~GlContext()
 {}
 
-bool GlContext::initialize(ANativeWindow *window)
+void GlContext::parseOptions(int *options, ShaderMode &shaderMode, ScreenMode &screenMode)
+{
+	int i = 0;
+
+	shaderMode = SHADER_AUTO;
+	screenMode = SCREEN_STEREO;
+
+	while (options[i] != END_FLAG) {
+		int flag = options[i++];
+
+		int val;
+		switch (flag) {
+		case SHADER_MODE_FLAG:
+			val = options[i++];
+			if (val >= SHADER_UNKNOWN) {
+				LOG_ERROR("invalid shader mode %d", val);
+			} else {
+				LOG_INFO("setting shader mode to %d", val);
+				shaderMode = (ShaderMode)val;
+			}
+			break;
+
+		case SCREEN_MODE_FLAG:
+			val = options[i++];
+			if (val >= SCREEN_UNKNOWN) {
+				LOG_ERROR("invalid screen mode %d", val);
+			} else {
+				LOG_INFO("setting screen mode to %d", val);
+				screenMode = (ScreenMode)val;
+			}
+			break;
+
+		default:
+			break;
+		}
+
+	}
+}
+
+bool GlContext::initialize(ANativeWindow *window, int frameWidth, int frameHeight, AVPixelFormat pix_fmt, int *opts)
 {
     EGLDisplay display;
     EGLConfig config;
@@ -140,6 +177,12 @@ bool GlContext::initialize(ANativeWindow *window)
 
     glEnable(GL_TEXTURE_2D);
 
+    // parse argument options
+    ShaderMode shaderMode;
+    ScreenMode screenMode;
+    parseOptions(opts, shaderMode, screenMode);
+
+    stereoMode = screenMode != SCREEN_STEREO ? false : true;
 
     if (stereoMode) {
         // setup stereoscopic mode
@@ -149,6 +192,33 @@ bool GlContext::initialize(ANativeWindow *window)
     	// only _leftChannel is rendered but we defined the right anyway.
     	_leftChannel = ParcelInfo(0, 0, _width, _height, SINGLE_CHANNEL);
     	_rightChannel = ParcelInfo(0, 0, _width, _height, SINGLE_CHANNEL);
+    }
+
+    // GlContext is initialized properly. Start initializing shader here
+    switch (shaderMode) {
+    case SHADER_AUTO:
+    	if (pix_fmt == PIX_FMT_YUV420P) {
+    		_renderer = new yuvshader::YUVShader(this, frameWidth, frameHeight);
+    	} else {
+    	    _renderer = new rgbframeshader::RGBFrameShader(this, frameWidth, frameHeight, pix_fmt);
+    	}
+    	break;
+
+    case SHADER_RGB:
+	    _renderer = new rgbframeshader::RGBFrameShader(this, frameWidth, frameHeight, pix_fmt);
+	    break;
+
+    case SHADER_ANAGLYPHIC:
+    	_renderer = new anaglyphicshader::AnaglyphicShader(this, frameWidth, frameHeight, pix_fmt);
+    	break;
+
+    case SHADER_YUV:
+    	_renderer = new yuvshader::YUVShader(this, frameWidth, frameHeight);
+    	break;
+
+    case SHADER_TEST:
+    	_renderer = new testshader::TestShader(this);
+    	break;
     }
 
     LOG_INFO("Version: %s GLSL: %s", glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
@@ -187,8 +257,8 @@ void GlContext::draw() {
     }
 }
 
-void GlContext::bindRGBA(const uint8_t *src, int width, int height) {
-	_renderer->bindRGBA(src, width, height);
+bool GlContext::bindFrame(AVFrame *frame) {
+	return _renderer->bindFrame(frame);
 }
 
 bool GlContext::swapBuffer() {
@@ -220,21 +290,21 @@ void GlContext::setIPDDistancePx(unsigned ipdPx)
 	_rightChannel.halfIPDDistancePx = ipdPx/2;
 }
 
-GlContext *glcontext_initialize(ANativeWindow *window, int frameWidth, int frameHeight)
+GlContext *glcontext_initialize(ANativeWindow *window, int frameWidth, int frameHeight, AVPixelFormat pix_fmt, int *options)
 {
-	GlContext *aobj = new GlContext(frameWidth, frameHeight);
-	if (aobj->initialize(window)) {
+	GlContext *aobj = new GlContext();
+	if (aobj->initialize(window, frameWidth, frameHeight, pix_fmt, options)) {
 		return aobj;
 	}
 	return NULL;
 }
 
-void glcontext_draw_frame(GlContext *context,
-		const uint8_t *src, int width, int height)
+void glcontext_draw_frame(GlContext *context, AVFrame *frame)
 {
 //	LOG_INFO("draw frame src %x with %dx%d", src, width, height);
-	context->bindRGBA(src, width, height);
-	context->draw();
+	if (context->bindFrame(frame)) {
+		context->draw();
+	}
 }
 
 int glcontext_swapBuffer(GlContext *context)

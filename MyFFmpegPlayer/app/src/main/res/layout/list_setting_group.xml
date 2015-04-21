@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal" >
+
+    <TextView
+        android:id="@+id/groupTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="48sp"
+        android:gravity="center_vertical"
+        android:layout_marginLeft="8dp"
+        android:text=""
+        android:textColor="@android:color/holo_blue_light"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/groupValue"
+        android:layout_width="wrap_content"
+        android:layout_height="48sp"
+        android:gravity="left|center_vertical"
+        android:layout_marginLeft="16dp"
+        android:text=""
+        android:textColor="#555"
+        android:textSize="14sp" />
+
+</LinearLayout>

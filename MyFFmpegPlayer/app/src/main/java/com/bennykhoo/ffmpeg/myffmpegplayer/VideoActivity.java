@@ -498,6 +498,10 @@ public class VideoActivity extends Activity implements OnClickListener,
 
 		displaySystemMenu(false);
 		mPlay = true;
+
+		// keep screen awake throughout duration of playing
+		// https://developer.android.com/training/scheduling/wakelock.html
+		this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 	}
 
 	@Override
@@ -506,6 +510,9 @@ public class VideoActivity extends Activity implements OnClickListener,
 				.setBackgroundResource(android.R.drawable.ic_media_play);
 		this.mPlayPauseButton.setEnabled(true);
 		mPlay = false;
+
+		// release screen awake lock
+		this.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 	}
 
 	private void stop() {

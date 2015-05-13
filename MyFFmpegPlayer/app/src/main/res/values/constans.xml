@@ -5,5 +5,6 @@
         <item>.mp4</item>
         <item>.avi</item>
         <item>.mov</item>
-    </array>    
+    </array>
+    <integer name="align_max_time">3000</integer>
 </resources>

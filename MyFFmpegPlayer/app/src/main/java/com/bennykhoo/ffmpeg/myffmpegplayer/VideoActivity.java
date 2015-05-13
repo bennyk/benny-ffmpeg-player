@@ -18,6 +18,7 @@
 
 package com.bennykhoo.ffmpeg.myffmpegplayer;
 
+import android.animation.ObjectAnimator;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -50,6 +51,7 @@ import android.view.WindowManager;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
+import android.view.animation.DecelerateInterpolator;
 import android.view.animation.TranslateAnimation;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
@@ -469,11 +471,23 @@ public class VideoActivity extends Activity implements OnClickListener,
 	public void startAligningSensors() {
 
 		// setup aligning listener. Start panning camera when orientation is initialized properly.
-		final InitSensorEventListener aligningSensorEventListener = new InitSensorEventListener(new InitSensorEventListener.FinishCallback() {
+		final int maxAlignTime = getResources().getInteger(R.integer.align_max_time);
+
+		final InitSensorEventListener aligningSensorEventListener = new InitSensorEventListener(maxAlignTime, new InitSensorEventListener.FinishCallback() {
 			@Override
 			public void onStart(InitSensorEventListener listener) {
 				// resetting lookAt angles on starting
 				mMpegPlayer.setLookatAngles(0, 0, 0);
+
+				View guideView = findViewById(R.id.align_guide_view);
+				guideView.setVisibility(View.VISIBLE);
+
+				View progressView = findViewById(R.id.align_progress);
+
+				ObjectAnimator animation = ObjectAnimator.ofInt(progressView, "progress", 1, maxAlignTime);
+				animation.setDuration(maxAlignTime); //in milliseconds
+				animation.setInterpolator (new DecelerateInterpolator());
+				animation.start();
 			}
 
 			@Override
@@ -494,11 +508,10 @@ public class VideoActivity extends Activity implements OnClickListener,
 //                View v = findViewById(R.id.surfaceview);
 //                v.playSoundEffect(android.view.SoundEffectConstants.CLICK);
 
-				final TextView tv = (TextView) findViewById(R.id.counterLabel);
+				final View guideView = findViewById(R.id.align_guide_view);
 
 				Animation fadeOut = new AlphaAnimation(1, 0);
 				fadeOut.setInterpolator(new AccelerateInterpolator()); //and this
-//				fadeOut.setStartOffset(1000);
 				fadeOut.setDuration(1000);
 
 				fadeOut.setAnimationListener(new Animation.AnimationListener() {
@@ -509,7 +522,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 
 					@Override
 					public void onAnimationEnd(Animation animation) {
-						tv.setVisibility(View.INVISIBLE);
+						guideView.setVisibility(View.INVISIBLE);
 					}
 
 					@Override
@@ -518,16 +531,17 @@ public class VideoActivity extends Activity implements OnClickListener,
 					}
 				});
 
-				tv.setAnimation(fadeOut);
+				guideView.setAnimation(fadeOut);
 
 				mMpegPlayer.resume();
+
+				View progressView = findViewById(R.id.align_progress);
+				progressView.clearAnimation();
 			}
 
 			@Override
 			public void onProgress(InitSensorEventListener listener, Long elapsedTimeMillis) {
-				TextView tv = (TextView) findViewById(R.id.counterLabel);
-				tv.setText(elapsedTimeMillis.toString());
-				tv.setVisibility(View.VISIBLE);
+				// empty
 			}
 		});
 
@@ -769,9 +783,13 @@ public class VideoActivity extends Activity implements OnClickListener,
         private long _startTime;
         private final float errorThreshold = (float) (15.0f/180.0f * Math.PI);
 
-        public InitSensorEventListener(FinishCallback _callback) {
+		private int _maxAlignTime;
+
+        public InitSensorEventListener(int maxAlignTime, FinishCallback _callback) {
             this._finishCallback = _callback;
-            start();
+			this._maxAlignTime = maxAlignTime;
+
+			start();
         }
 
         void start() {
@@ -834,7 +852,7 @@ public class VideoActivity extends Activity implements OnClickListener,
                 if (okay) {
                     readOrientation(orientation);
                     long elapsedTime = System.currentTimeMillis() - _startTime;
-                    if (elapsedTime > 3000) {
+                    if (elapsedTime > _maxAlignTime) {
                         // set offset
                         finish();
                     } else {

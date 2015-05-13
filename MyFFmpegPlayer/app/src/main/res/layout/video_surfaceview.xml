@@ -100,16 +100,49 @@
         android:layout_centerVertical="true" />
 
 
-    <TextView
-        android:visibility="invisible"
+    <LinearLayout
+        android:id="@+id/align_guide_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        android:text="123"
-        android:id="@+id/counterLabel"
-        android:background="@null"
-        android:textColor="@android:color/white"
-        android:textSize="60dp"
-        android:layout_weight="0.5" />
+        android:visibility="visible"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        >
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            >
+            <ImageView
+                android:layout_width="280dp"
+                android:layout_height="280dp"
+                android:layout_gravity="center"
+                android:background="@drawable/circular_patch" />
+            <ProgressBar
+                android:id="@+id/align_progress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="300dp"
+                android:layout_height="300dp"
+                android:layout_gravity="center"
+                android:max="@integer/align_max_time"
+                android:progress="0"
+                android:rotation="-90"
+                android:progressDrawable="@drawable/circular_progress" />
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="@drawable/hold_phone_steady"
+                />
+        </FrameLayout>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="-8dp"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:text="Hold up phone at desired visual direction and keep it steady ..."
+            android:background="#8555"
+            android:textColor="@android:color/white" />
+    </LinearLayout>
 
-</RelativeLayout>
+    </RelativeLayout>

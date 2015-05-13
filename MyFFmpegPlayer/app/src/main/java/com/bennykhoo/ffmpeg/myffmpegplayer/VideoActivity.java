@@ -47,6 +47,8 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.TranslateAnimation;
 import android.widget.AdapterView;
@@ -205,38 +207,11 @@ public class VideoActivity extends Activity implements OnClickListener,
 	@Override
 	protected void onPause() {
 		super.onPause();
-
-        _sensorManager.unregisterListener(_lookAtSensorEventListener);
     };
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-
-        // setup aligning listener. Start panning camera when orientation is initialized properly.
-        final InitSensorEventListener aligningSensorEventListener = new InitSensorEventListener(new InitSensorEventListener.FinishCallback() {
-            @Override
-            public void finish(InitSensorEventListener listener, float[] orientation) {
-                _sensorManager.unregisterListener(listener);
-                Log.i(TAG, "received stable orientation: " + orientation[0] + " " + orientation[1] + " " + orientation[2]);
-                _lookAtSensorEventListener = new LookAtSensorEventListener(orientation, new LookAtSensorEventListener.LookAtCallback() {
-                    @Override
-                    public void lookAt(float azimuth, float pitch, float roll) {
-                        mMpegPlayer.setLookatAngles(azimuth, pitch, roll);
-                    }
-                });
-
-                _sensorManager.registerListener(_lookAtSensorEventListener, _accelerometer, SensorManager.SENSOR_DELAY_GAME);
-                _sensorManager.registerListener(_lookAtSensorEventListener, _magnetometer, SensorManager.SENSOR_DELAY_GAME);
-
-                // play click sound?
-//                View v = findViewById(R.id.surfaceview);
-//                v.playSoundEffect(android.view.SoundEffectConstants.CLICK);
-            }
-        });
-
-        _sensorManager.registerListener(aligningSensorEventListener, _accelerometer, SensorManager.SENSOR_DELAY_GAME);
-        _sensorManager.registerListener(aligningSensorEventListener, _magnetometer, SensorManager.SENSOR_DELAY_GAME);
 	}
 
 	@Override
@@ -408,7 +383,8 @@ public class VideoActivity extends Activity implements OnClickListener,
 		if (mPlay) {
 			mMpegPlayer.pause();
 		} else {
-			mMpegPlayer.resume();
+//			mMpegPlayer.resume();
+			startAligningSensors();
 			displaySystemMenu(true);
 
             hideControls();
@@ -445,21 +421,21 @@ public class VideoActivity extends Activity implements OnClickListener,
         TranslateAnimation translate2 = new TranslateAnimation(0, 0, 0, -this.mStreamsView.getHeight());
         translate2.setDuration(500);
         translate2.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
-                mStreamsView.setVisibility(View.VISIBLE);
-            }
+			@Override
+			public void onAnimationStart(Animation animation) {
+				mStreamsView.setVisibility(View.VISIBLE);
+			}
 
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                mStreamsView.setVisibility(View.GONE);
-            }
+			@Override
+			public void onAnimationEnd(Animation animation) {
+				mStreamsView.setVisibility(View.GONE);
+			}
 
-            @Override
-            public void onAnimationRepeat(Animation animation) {
+			@Override
+			public void onAnimationRepeat(Animation animation) {
 
-            }
-        });
+			}
+		});
 
         this.mStreamsView.startAnimation(translate2);
 
@@ -490,8 +466,85 @@ public class VideoActivity extends Activity implements OnClickListener,
         }
     }
 
+	public void startAligningSensors() {
+
+		// setup aligning listener. Start panning camera when orientation is initialized properly.
+		final InitSensorEventListener aligningSensorEventListener = new InitSensorEventListener(new InitSensorEventListener.FinishCallback() {
+			@Override
+			public void onStart(InitSensorEventListener listener) {
+				// resetting lookAt angles on starting
+				mMpegPlayer.setLookatAngles(0, 0, 0);
+			}
+
+			@Override
+			public void onFinish(InitSensorEventListener listener, float[] orientation) {
+				_sensorManager.unregisterListener(listener);
+				Log.i(TAG, "received stable orientation: " + orientation[0] + " " + orientation[1] + " " + orientation[2]);
+				_lookAtSensorEventListener = new LookAtSensorEventListener(orientation, new LookAtSensorEventListener.LookAtCallback() {
+					@Override
+					public void lookAt(float azimuth, float pitch, float roll) {
+						mMpegPlayer.setLookatAngles(azimuth, pitch, roll);
+					}
+				});
+
+				_sensorManager.registerListener(_lookAtSensorEventListener, _accelerometer, SensorManager.SENSOR_DELAY_GAME);
+				_sensorManager.registerListener(_lookAtSensorEventListener, _magnetometer, SensorManager.SENSOR_DELAY_GAME);
+
+				// play click sound?
+//                View v = findViewById(R.id.surfaceview);
+//                v.playSoundEffect(android.view.SoundEffectConstants.CLICK);
+
+				final TextView tv = (TextView) findViewById(R.id.counterLabel);
+
+				Animation fadeOut = new AlphaAnimation(1, 0);
+				fadeOut.setInterpolator(new AccelerateInterpolator()); //and this
+//				fadeOut.setStartOffset(1000);
+				fadeOut.setDuration(1000);
+
+				fadeOut.setAnimationListener(new Animation.AnimationListener() {
+					@Override
+					public void onAnimationStart(Animation animation) {
+
+					}
+
+					@Override
+					public void onAnimationEnd(Animation animation) {
+						tv.setVisibility(View.INVISIBLE);
+					}
+
+					@Override
+					public void onAnimationRepeat(Animation animation) {
+
+					}
+				});
+
+				tv.setAnimation(fadeOut);
+
+				mMpegPlayer.resume();
+			}
+
+			@Override
+			public void onProgress(InitSensorEventListener listener, Long elapsedTimeMillis) {
+				TextView tv = (TextView) findViewById(R.id.counterLabel);
+				tv.setText(elapsedTimeMillis.toString());
+				tv.setVisibility(View.VISIBLE);
+			}
+		});
+
+		_sensorManager.registerListener(aligningSensorEventListener, _accelerometer, SensorManager.SENSOR_DELAY_GAME);
+		_sensorManager.registerListener(aligningSensorEventListener, _magnetometer, SensorManager.SENSOR_DELAY_GAME);
+	}
+
+	public void stopAligningSensors() {
+		if (_lookAtSensorEventListener != null) {
+			Log.d(TAG, "unregistering _lookAtSensorEventListener");
+			_sensorManager.unregisterListener(_lookAtSensorEventListener);
+		}
+	}
+
 	@Override
 	public void onFFResume(NotPlayingException result) {
+		Log.d(TAG, "onFFResume");
 		this.mPlayPauseButton
 				.setBackgroundResource(android.R.drawable.ic_media_pause);
 		this.mPlayPauseButton.setEnabled(true);
@@ -502,10 +555,14 @@ public class VideoActivity extends Activity implements OnClickListener,
 		// keep screen awake throughout duration of playing
 		// https://developer.android.com/training/scheduling/wakelock.html
 		this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+		// if we want to start aligning while the player is playing.
+//		startAligningSensors();
 	}
 
 	@Override
 	public void onFFPause(NotPlayingException err) {
+		Log.d(TAG, "onFFPause");
 		this.mPlayPauseButton
 				.setBackgroundResource(android.R.drawable.ic_media_play);
 		this.mPlayPauseButton.setEnabled(true);
@@ -513,6 +570,8 @@ public class VideoActivity extends Activity implements OnClickListener,
 
 		// release screen awake lock
 		this.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+		stopAligningSensors();
 	}
 
 	private void stop() {
@@ -523,6 +582,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 
 	@Override
 	public void onFFStop() {
+		stopAligningSensors();
 	}
 
 	@Override
@@ -692,7 +752,9 @@ public class VideoActivity extends Activity implements OnClickListener,
 
     static class InitSensorEventListener implements SensorEventListener {
         public interface FinishCallback {
-            public void finish(InitSensorEventListener listener, float[] orientation);
+			public void onProgress(InitSensorEventListener listener, Long elapsedTimeMillis);
+			public void onStart(InitSensorEventListener listener);
+            public void onFinish(InitSensorEventListener listener, float[] orientation);
         }
 
         private FinishCallback _finishCallback;
@@ -719,6 +781,8 @@ public class VideoActivity extends Activity implements OnClickListener,
             _lastOrientationSet = null;
             _readingCount = 0;
             _startTime = System.currentTimeMillis();
+
+			_finishCallback.onStart(this);
         }
 
         void finish() {
@@ -726,8 +790,12 @@ public class VideoActivity extends Activity implements OnClickListener,
             for (int i = 0; i < 3; i++) {
                 finalOrientation[i] = _summedOrientationSet[i] / _readingCount;
             }
-            _finishCallback.finish(this, finalOrientation);
+            _finishCallback.onFinish(this, finalOrientation);
         }
+
+		void reportElapsed(long elapsed) {
+			_finishCallback.onProgress(this, elapsed);
+		}
 
         void readOrientation(float []orientation) {
             for (int i = 0; i < 3; i++) {
@@ -769,7 +837,9 @@ public class VideoActivity extends Activity implements OnClickListener,
                     if (elapsedTime > 3000) {
                         // set offset
                         finish();
-                    }
+                    } else {
+						reportElapsed(elapsedTime);
+					}
                 }
                 _lastOrientationSet = orientation;
             }

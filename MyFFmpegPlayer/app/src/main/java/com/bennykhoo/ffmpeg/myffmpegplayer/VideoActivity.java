@@ -37,6 +37,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.os.Vibrator;
 import android.provider.BaseColumns;
 import android.support.v4.widget.SimpleCursorAdapter;
@@ -71,7 +72,6 @@ import com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegSurfaceView;
 import com.bennykhoo.ffmpeg.myffmpeglibrary.NotPlayingException;
 
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -479,6 +479,16 @@ public class VideoActivity extends Activity implements OnClickListener,
 				// resetting lookAt angles on starting
 				mMpegPlayer.setLookatAngles(0, 0, 0);
 
+				// playback a single frame to show the new reset visual
+				mMpegPlayer.resume();
+				final Handler handler = new Handler();
+				handler.postDelayed(new Runnable() {
+					@Override
+					public void run() {
+						mMpegPlayer.pause();
+					}
+				}, 33);
+
 				View guideView = findViewById(R.id.align_guide_view);
 				guideView.setVisibility(View.VISIBLE);
 
@@ -777,11 +787,10 @@ public class VideoActivity extends Activity implements OnClickListener,
         private float[] _lastMagnetoSet;
         private float[] _r = new float[9];
 
-        private float[] _lastOrientationSet;
         private float[] _summedOrientationSet;
         private int _readingCount;
         private long _startTime;
-        private final float errorThreshold = (float) (15.0f/180.0f * Math.PI);
+        private final float errorThreshold = (float) (3.0f/180.0f * Math.PI);
 
 		private int _maxAlignTime;
 
@@ -796,7 +805,6 @@ public class VideoActivity extends Activity implements OnClickListener,
             _lastAccelSet = null;
             _lastMagnetoSet = null;
             _summedOrientationSet = new float[3];
-            _lastOrientationSet = null;
             _readingCount = 0;
             _startTime = System.currentTimeMillis();
 
@@ -822,6 +830,17 @@ public class VideoActivity extends Activity implements OnClickListener,
             _readingCount++;
         }
 
+		boolean getRollingOrientation(float []orientation) {
+			if (_readingCount < 1) {
+				return false;
+			}
+
+			for (int i = 0; i < 3; i++) {
+				orientation[i] = _summedOrientationSet[i] / _readingCount;
+			}
+			return true;
+		}
+
         public void onSensorChanged(SensorEvent event) {
             if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
                 _lastAccelSet = LowPass(event.values.clone(), _lastAccelSet);
@@ -836,10 +855,13 @@ public class VideoActivity extends Activity implements OnClickListener,
 
                 // if erratic reading restart timer
                 boolean okay = true;
-                if (_lastOrientationSet != null) {
+
+				float[] rollingOrientation = new float[3];
+
+                if (getRollingOrientation(rollingOrientation)) {
                     float[] err = new float[3];
                     for (int i = 0; i < 3; i++) {
-                        err[i] = orientation[i] - _lastOrientationSet[i];
+                        err[i] = orientation[i] - rollingOrientation[i];
                         if (err[i] > errorThreshold) {
                             Log.w(TAG, "erratic reading at indice " + i + " with error " + err[i] + " more than preset threshold. Restarting timer");
                             start();
@@ -859,7 +881,6 @@ public class VideoActivity extends Activity implements OnClickListener,
 						reportElapsed(elapsedTime);
 					}
                 }
-                _lastOrientationSet = orientation;
             }
         }
 

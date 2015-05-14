@@ -52,7 +52,7 @@ import android.view.WindowManager;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
-import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
 import android.view.animation.TranslateAnimation;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
@@ -61,6 +61,7 @@ import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegDisplay;
 import com.bennykhoo.ffmpeg.myffmpeglibrary.FFmpegError;
@@ -122,8 +123,9 @@ public class VideoActivity extends Activity implements OnClickListener,
     private LookAtSensorEventListener _lookAtSensorEventListener;
     private Sensor _accelerometer;
     private Sensor _magnetometer;
+	private InitSensorEventListener _aligningSensorEventListener;
 
-    @Override
+	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		this.getWindow().requestFeature(Window.FEATURE_NO_TITLE);
 		getWindow().setFormat(PixelFormat.RGBA_8888);
@@ -196,6 +198,10 @@ public class VideoActivity extends Activity implements OnClickListener,
             @Override
             public void onClick(View v) {
                 toggleControls();
+
+				if (_aligningSensorEventListener != null) {
+					_aligningSensorEventListener.cancel();
+				}
             }
         });
 
@@ -474,6 +480,8 @@ public class VideoActivity extends Activity implements OnClickListener,
 		final int maxAlignTime = getResources().getInteger(R.integer.align_max_time);
 
 		final InitSensorEventListener aligningSensorEventListener = new InitSensorEventListener(maxAlignTime, new InitSensorEventListener.FinishCallback() {
+			ObjectAnimator _progressAnimator;
+
 			@Override
 			public void onStart(InitSensorEventListener listener) {
 				// resetting lookAt angles on starting
@@ -496,8 +504,11 @@ public class VideoActivity extends Activity implements OnClickListener,
 
 				ObjectAnimator animation = ObjectAnimator.ofInt(progressView, "progress", 1, maxAlignTime);
 				animation.setDuration(maxAlignTime); //in milliseconds
-				animation.setInterpolator (new DecelerateInterpolator());
+				animation.setInterpolator(new LinearInterpolator());
 				animation.start();
+
+				_progressAnimator = animation;
+
 			}
 
 			@Override
@@ -518,6 +529,35 @@ public class VideoActivity extends Activity implements OnClickListener,
 //                View v = findViewById(R.id.surfaceview);
 //                v.playSoundEffect(android.view.SoundEffectConstants.CLICK);
 
+				mMpegPlayer.resume();
+				animateDismissal();
+
+				// release sensor handle
+				_aligningSensorEventListener = null;
+			}
+
+			@Override
+			public void onProgress(InitSensorEventListener listener, Long elapsedTimeMillis) {
+				// empty
+			}
+
+			@Override
+			public void onCancel(InitSensorEventListener listener) {
+				Log.i(TAG, "init alignment cancelled");
+
+				_sensorManager.unregisterListener(listener);
+				_progressAnimator.cancel();
+
+				animateDismissal();
+
+				Toast.makeText(getApplicationContext(), "Sensor alignment cancelled.",
+						Toast.LENGTH_SHORT).show();
+
+				// release sensor handle
+				_aligningSensorEventListener = null;
+			}
+
+			void animateDismissal() {
 				final View guideView = findViewById(R.id.align_guide_view);
 
 				Animation fadeOut = new AlphaAnimation(1, 0);
@@ -543,20 +583,15 @@ public class VideoActivity extends Activity implements OnClickListener,
 
 				guideView.setAnimation(fadeOut);
 
-				mMpegPlayer.resume();
-
 				View progressView = findViewById(R.id.align_progress);
 				progressView.clearAnimation();
-			}
-
-			@Override
-			public void onProgress(InitSensorEventListener listener, Long elapsedTimeMillis) {
-				// empty
 			}
 		});
 
 		_sensorManager.registerListener(aligningSensorEventListener, _accelerometer, SensorManager.SENSOR_DELAY_GAME);
 		_sensorManager.registerListener(aligningSensorEventListener, _magnetometer, SensorManager.SENSOR_DELAY_GAME);
+
+		_aligningSensorEventListener = aligningSensorEventListener;
 	}
 
 	public void stopAligningSensors() {
@@ -779,7 +814,8 @@ public class VideoActivity extends Activity implements OnClickListener,
 			public void onProgress(InitSensorEventListener listener, Long elapsedTimeMillis);
 			public void onStart(InitSensorEventListener listener);
             public void onFinish(InitSensorEventListener listener, float[] orientation);
-        }
+			public void onCancel(InitSensorEventListener listener);
+		}
 
         private FinishCallback _finishCallback;
 
@@ -793,10 +829,12 @@ public class VideoActivity extends Activity implements OnClickListener,
         private final float errorThreshold = (float) (3.0f/180.0f * Math.PI);
 
 		private int _maxAlignTime;
+		private boolean _cancelled;
 
         public InitSensorEventListener(int maxAlignTime, FinishCallback _callback) {
             this._finishCallback = _callback;
 			this._maxAlignTime = maxAlignTime;
+			this._cancelled = false;
 
 			start();
         }
@@ -812,11 +850,13 @@ public class VideoActivity extends Activity implements OnClickListener,
         }
 
         void finish() {
-            float[] finalOrientation = new float[3];
+			if (_cancelled) return;
+
+			float[] finalOrientation = new float[3];
             for (int i = 0; i < 3; i++) {
                 finalOrientation[i] = _summedOrientationSet[i] / _readingCount;
-            }
-            _finishCallback.onFinish(this, finalOrientation);
+			}
+			_finishCallback.onFinish(this, finalOrientation);
         }
 
 		void reportElapsed(long elapsed) {
@@ -841,7 +881,14 @@ public class VideoActivity extends Activity implements OnClickListener,
 			return true;
 		}
 
+		void cancel() {
+			_cancelled = true;
+			_finishCallback.onCancel(this);
+		}
+
         public void onSensorChanged(SensorEvent event) {
+			if (_cancelled) return;
+
             if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
                 _lastAccelSet = LowPass(event.values.clone(), _lastAccelSet);
             } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
@@ -862,7 +909,7 @@ public class VideoActivity extends Activity implements OnClickListener,
                     float[] err = new float[3];
                     for (int i = 0; i < 3; i++) {
                         err[i] = orientation[i] - rollingOrientation[i];
-                        if (err[i] > errorThreshold) {
+                        if (Math.abs(err[i]) > errorThreshold) {
                             Log.w(TAG, "erratic reading at indice " + i + " with error " + err[i] + " more than preset threshold. Restarting timer");
                             start();
                             okay = false;

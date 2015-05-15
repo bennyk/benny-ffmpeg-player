@@ -521,6 +521,16 @@ public class VideoActivity extends Activity implements OnClickListener,
 			}
 		});
 		mPlayPauseButton.setAnimation(fadeIn);
+
+		if (mPlay) {
+			final Handler handler = new Handler();
+			handler.postDelayed(new Runnable() {
+				@Override
+				public void run() {
+					if (mPlay) hideControls();
+				}
+			}, 3000);
+		}
 	}
 
     public void toggleControls() {

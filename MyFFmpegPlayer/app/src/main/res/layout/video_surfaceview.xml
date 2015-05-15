@@ -38,7 +38,7 @@
             android:layout_gravity="center"
             android:background="@android:drawable/ic_media_play"
             android:contentDescription="@null"
-            android:visibility="visible"
+            android:visibility="invisible"
             android:enabled="false" />
 
     </FrameLayout>

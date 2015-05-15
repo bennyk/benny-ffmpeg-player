@@ -339,6 +339,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 		}
 		mPlayPauseButton.setBackgroundResource(android.R.drawable.ic_media_play);
 		mPlayPauseButton.setEnabled(true);
+		mPlayPauseButton.setVisibility(View.VISIBLE);
 		this.mControlsView.setVisibility(View.VISIBLE);
 		if (mStreamsView != null) this.mStreamsView.setVisibility(View.VISIBLE);
 		this.mLoadingView.setVisibility(View.GONE);
@@ -397,12 +398,16 @@ public class VideoActivity extends Activity implements OnClickListener,
 			startAligningSensors();
 			displaySystemMenu(true);
 
-            hideControls();
+            hideControls(false);
 		}
 		mPlay = !mPlay;
 	}
 
-    public void hideControls() {
+	private void hideControls() {
+		hideControls(true);
+	}
+
+    public void hideControls(boolean animatePlayPause) {
         Log.i(TAG, "hiding controls");
 
         TranslateAnimation translate1 = new TranslateAnimation(0, 0, 0, this.mControlsView.getHeight());
@@ -453,27 +458,29 @@ public class VideoActivity extends Activity implements OnClickListener,
 //        this.mCoverView.setVisibility(View.VISIBLE);
 
 		mPlayPauseButton.setVisibility(View.INVISIBLE);
-		Animation fadeOut = new AlphaAnimation(1, 0);
-		fadeOut.setInterpolator(new AccelerateInterpolator()); //and this
-		fadeOut.setDuration(500);
 
-		fadeOut.setAnimationListener(new Animation.AnimationListener() {
-			@Override
-			public void onAnimationStart(Animation animation) {
-				Log.d(TAG, "play-pause button animation start");
-			}
+		if (animatePlayPause) {
+			Animation fadeOut = new AlphaAnimation(1, 0);
+			fadeOut.setInterpolator(new AccelerateInterpolator()); //and this
+			fadeOut.setDuration(500);
 
-			@Override
-			public void onAnimationEnd(Animation animation) {
-				mPlayPauseButton.setVisibility(View.INVISIBLE);
-				mPlayPauseButton.clearAnimation();
-			}
+			fadeOut.setAnimationListener(new Animation.AnimationListener() {
+				@Override
+				public void onAnimationStart(Animation animation) {
+				}
 
-			@Override
-			public void onAnimationRepeat(Animation animation) {
-			}
-		});
-		mPlayPauseButton.setAnimation(fadeOut);
+				@Override
+				public void onAnimationEnd(Animation animation) {
+					mPlayPauseButton.setVisibility(View.INVISIBLE);
+					mPlayPauseButton.clearAnimation();
+				}
+
+				@Override
+				public void onAnimationRepeat(Animation animation) {
+				}
+			});
+			mPlayPauseButton.setAnimation(fadeOut);
+		}
 	}
 
     public void exposeControls() {

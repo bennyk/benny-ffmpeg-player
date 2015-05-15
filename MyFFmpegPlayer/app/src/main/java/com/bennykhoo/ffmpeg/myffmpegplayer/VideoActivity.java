@@ -406,21 +406,21 @@ public class VideoActivity extends Activity implements OnClickListener,
         TranslateAnimation translate1 = new TranslateAnimation(0, 0, 0, this.mControlsView.getHeight());
         translate1.setDuration(500);
         translate1.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
-                mControlsView.setVisibility(View.VISIBLE);
-            }
+			@Override
+			public void onAnimationStart(Animation animation) {
+				mControlsView.setVisibility(View.VISIBLE);
+			}
 
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                mControlsView.setVisibility(View.GONE);
-            }
+			@Override
+			public void onAnimationEnd(Animation animation) {
+				mControlsView.setVisibility(View.GONE);
+			}
 
-            @Override
-            public void onAnimationRepeat(Animation animation) {
+			@Override
+			public void onAnimationRepeat(Animation animation) {
 
-            }
-        });
+			}
+		});
 
 
         this.mControlsView.startAnimation(translate1);
@@ -448,7 +448,30 @@ public class VideoActivity extends Activity implements OnClickListener,
         this.mStreamsView.startAnimation(translate2);
 
 //        this.mCoverView.setVisibility(View.VISIBLE);
-    }
+
+		mPlayPauseButton.setVisibility(View.INVISIBLE);
+		Animation fadeOut = new AlphaAnimation(1, 0);
+		fadeOut.setInterpolator(new AccelerateInterpolator()); //and this
+		fadeOut.setDuration(500);
+
+		fadeOut.setAnimationListener(new Animation.AnimationListener() {
+			@Override
+			public void onAnimationStart(Animation animation) {
+				Log.d(TAG, "play-pause button animation start");
+			}
+
+			@Override
+			public void onAnimationEnd(Animation animation) {
+				mPlayPauseButton.setVisibility(View.INVISIBLE);
+				mPlayPauseButton.clearAnimation();
+			}
+
+			@Override
+			public void onAnimationRepeat(Animation animation) {
+			}
+		});
+		mPlayPauseButton.setAnimation(fadeOut);
+	}
 
     public void exposeControls() {
         Log.i(TAG, "exposing controls");
@@ -464,7 +487,29 @@ public class VideoActivity extends Activity implements OnClickListener,
         this.mStreamsView.startAnimation(translate2);
 
 //        this.mCoverView.setVisibility(View.GONE);
-    }
+
+		mPlayPauseButton.setVisibility(View.VISIBLE);
+		Animation fadeIn = new AlphaAnimation(0, 1);
+		fadeIn.setInterpolator(new AccelerateInterpolator()); //and this
+		fadeIn.setDuration(500);
+
+		fadeIn.setAnimationListener(new Animation.AnimationListener() {
+			@Override
+			public void onAnimationStart(Animation animation) {
+			}
+
+			@Override
+			public void onAnimationEnd(Animation animation) {
+//				mPlayPauseButton.setVisibility(View.VISIBLE);
+				mPlayPauseButton.clearAnimation();
+			}
+
+			@Override
+			public void onAnimationRepeat(Animation animation) {
+			}
+		});
+		mPlayPauseButton.setAnimation(fadeIn);
+	}
 
     public void toggleControls() {
         if (this.mControlsView.getVisibility() == View.VISIBLE) {

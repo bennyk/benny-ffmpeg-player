@@ -24,13 +24,24 @@
         android:textSize="10dp"
         android:layout_weight="0.5" />
 
-    <View
+    <FrameLayout
         android:id="@+id/cover_view"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:background="@null"
         android:visibility="visible"
-        />
+        >
+        <Button
+            android:id="@+id/play_pause"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@android:drawable/ic_media_play"
+            android:contentDescription="@null"
+            android:visibility="visible"
+            android:enabled="false" />
+
+    </FrameLayout>
 
     <LinearLayout
         android:id="@+id/streams"
@@ -41,7 +52,7 @@
         android:layout_alignParentTop="true"
         android:background="#40ffffff"
         android:orientation="horizontal"
-        android:visibility="visible" >
+        android:visibility="gone" >
 
         <Spinner
             android:id="@+id/language_spinner"
@@ -58,21 +69,14 @@
 
     <RelativeLayout
         android:id="@+id/controls"
+        android:padding="8dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
-        android:background="#40ffffff"
+        android:background="@drawable/gradient_bar"
         android:visibility="visible" >
-
-        <Button
-            android:id="@+id/play_pause"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@android:drawable/ic_media_play"
-            android:contentDescription="@null"
-            android:enabled="false" />
 
         <Button
             android:id="@+id/scale_type"
@@ -80,6 +84,7 @@
             android:layout_height="wrap_content"
             android:layout_toRightOf="@+id/play_pause"
             android:background="@android:drawable/ic_menu_info_details"
+            android:visibility="gone"
             android:enabled="true" />
 
         <SeekBar

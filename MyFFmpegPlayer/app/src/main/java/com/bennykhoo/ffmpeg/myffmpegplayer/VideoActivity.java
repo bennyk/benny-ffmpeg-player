@@ -610,6 +610,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 			void animateDismissal() {
 				final View guideView = findViewById(R.id.align_guide_view);
 
+				guideView.setVisibility(View.INVISIBLE);
 				Animation fadeOut = new AlphaAnimation(1, 0);
 				fadeOut.setInterpolator(new AccelerateInterpolator()); //and this
 				fadeOut.setDuration(1000);

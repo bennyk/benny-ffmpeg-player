@@ -99,7 +99,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 	private View mVideoView;
 	private Button mPlayPauseButton;
 	private boolean mTracking = false;
-	private View mStreamsView;
+	private View mStreamsView = null;
 	private Spinner mLanguageSpinner;
 	private int mLanguageSpinnerSelectedPosition = 0;
 	private Spinner mSubtitleSpinner;
@@ -152,7 +152,9 @@ public class VideoActivity extends Activity implements OnClickListener,
 		mScaleButton.setOnClickListener(this);
 		
 		mControlsView = this.findViewById(R.id.controls);
-		mStreamsView = this.findViewById(R.id.streams);
+
+		// streams view is not use for now
+//		mStreamsView = this.findViewById(R.id.streams);
 		mLoadingView = this.findViewById(R.id.loading_view);
 		mLanguageSpinner = (Spinner) this.findViewById(R.id.language_spinner);
 		mSubtitleSpinner = (Spinner) this.findViewById(R.id.subtitle_spinner);
@@ -338,7 +340,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 		mPlayPauseButton.setBackgroundResource(android.R.drawable.ic_media_play);
 		mPlayPauseButton.setEnabled(true);
 		this.mControlsView.setVisibility(View.VISIBLE);
-		this.mStreamsView.setVisibility(View.VISIBLE);
+		if (mStreamsView != null) this.mStreamsView.setVisibility(View.VISIBLE);
 		this.mLoadingView.setVisibility(View.GONE);
 		MatrixCursor audio = new MatrixCursor(PROJECTION);
 		MatrixCursor subtitles = new MatrixCursor(PROJECTION);
@@ -425,27 +427,28 @@ public class VideoActivity extends Activity implements OnClickListener,
 
         this.mControlsView.startAnimation(translate1);
 
+		if (mStreamsView != null) {
+			TranslateAnimation translate2 = new TranslateAnimation(0, 0, 0, -this.mStreamsView.getHeight());
+			translate2.setDuration(500);
+			translate2.setAnimationListener(new Animation.AnimationListener() {
+				@Override
+				public void onAnimationStart(Animation animation) {
+					mStreamsView.setVisibility(View.VISIBLE);
+				}
 
-        TranslateAnimation translate2 = new TranslateAnimation(0, 0, 0, -this.mStreamsView.getHeight());
-        translate2.setDuration(500);
-        translate2.setAnimationListener(new Animation.AnimationListener() {
-			@Override
-			public void onAnimationStart(Animation animation) {
-				mStreamsView.setVisibility(View.VISIBLE);
-			}
+				@Override
+				public void onAnimationEnd(Animation animation) {
+					mStreamsView.setVisibility(View.GONE);
+				}
 
-			@Override
-			public void onAnimationEnd(Animation animation) {
-				mStreamsView.setVisibility(View.GONE);
-			}
+				@Override
+				public void onAnimationRepeat(Animation animation) {
 
-			@Override
-			public void onAnimationRepeat(Animation animation) {
+				}
+			});
 
-			}
-		});
-
-        this.mStreamsView.startAnimation(translate2);
+			this.mStreamsView.startAnimation(translate2);
+		}
 
 //        this.mCoverView.setVisibility(View.VISIBLE);
 
@@ -481,10 +484,12 @@ public class VideoActivity extends Activity implements OnClickListener,
         mControlsView.setVisibility(View.VISIBLE);
         this.mControlsView.startAnimation(translate1);
 
-        TranslateAnimation translate2 = new TranslateAnimation(0, 0, -this.mStreamsView.getHeight(), 0);
-        translate2.setDuration(500);
-        this.mStreamsView.setVisibility(View.VISIBLE);
-        this.mStreamsView.startAnimation(translate2);
+		if (mStreamsView != null) {
+			TranslateAnimation translate2 = new TranslateAnimation(0, 0, -this.mStreamsView.getHeight(), 0);
+			translate2.setDuration(500);
+			this.mStreamsView.setVisibility(View.VISIBLE);
+			this.mStreamsView.startAnimation(translate2);
+		}
 
 //        this.mCoverView.setVisibility(View.GONE);
 
@@ -680,7 +685,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 
 	private void stop() {
 		this.mControlsView.setVisibility(View.GONE);
-		this.mStreamsView.setVisibility(View.GONE);
+		if (mStreamsView != null) this.mStreamsView.setVisibility(View.GONE);
 		this.mLoadingView.setVisibility(View.VISIBLE);
 	}
 

@@ -125,6 +125,10 @@ public class VideoActivity extends Activity implements OnClickListener,
     private Sensor _magnetometer;
 	private InitSensorEventListener _aligningSensorEventListener;
 
+	// for pending auto-hide handler
+	private Handler _hideControlsLaterHandler;
+	private Runnable _hideControlsLaterRunnable;
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		this.getWindow().requestFeature(Window.FEATURE_NO_TITLE);
@@ -408,7 +412,15 @@ public class VideoActivity extends Activity implements OnClickListener,
 	}
 
     public void hideControls(boolean animatePlayPause) {
+
+		if (mControlsView.getVisibility() != View.VISIBLE) {
+			return;
+		}
+
         Log.i(TAG, "hiding controls");
+
+		// cancel any pending control later task
+		cancelHideControlsLater();
 
         TranslateAnimation translate1 = new TranslateAnimation(0, 0, 0, this.mControlsView.getHeight());
         translate1.setDuration(500);
@@ -484,7 +496,15 @@ public class VideoActivity extends Activity implements OnClickListener,
 	}
 
     public void exposeControls() {
-        Log.i(TAG, "exposing controls");
+
+		if (mControlsView.getVisibility() == View.VISIBLE) {
+			return;
+		}
+
+		// cancel any pending auto hide control if any
+		cancelHideControlsLater();
+
+		Log.i(TAG, "exposing controls");
 
         TranslateAnimation translate1 = new TranslateAnimation(0, 0, this.mControlsView.getHeight(), 0);
         translate1.setDuration(500);
@@ -523,13 +543,38 @@ public class VideoActivity extends Activity implements OnClickListener,
 		mPlayPauseButton.setAnimation(fadeIn);
 
 		if (mPlay) {
-			final Handler handler = new Handler();
-			handler.postDelayed(new Runnable() {
-				@Override
-				public void run() {
-					if (mPlay) hideControls();
+			hideControlsLater();
+		}
+	}
+
+	void hideControlsLater() {
+		_hideControlsLaterHandler = new Handler();
+		_hideControlsLaterRunnable = new Runnable() {
+			@Override
+			public void run() {
+				if (!mTracking) {
+					if (mPlay)
+						hideControls();
+
+					// clean up
+					_hideControlsLaterHandler = null;
+					_hideControlsLaterRunnable = null;
 				}
-			}, 3000);
+				else {
+					// keep recurse back if player is in tracking state.
+					hideControlsLater();
+				}
+			}
+		};
+		_hideControlsLaterHandler.postDelayed(_hideControlsLaterRunnable, 3000);
+	}
+
+	void cancelHideControlsLater() {
+		if (_hideControlsLaterHandler != null) {
+			_hideControlsLaterHandler.removeCallbacks(_hideControlsLaterRunnable);
+
+			_hideControlsLaterHandler = null;
+			_hideControlsLaterRunnable = null;
 		}
 	}
 

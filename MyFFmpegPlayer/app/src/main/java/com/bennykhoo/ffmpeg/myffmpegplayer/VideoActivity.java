@@ -57,6 +57,7 @@ import android.view.animation.TranslateAnimation;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.Spinner;
@@ -97,7 +98,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 	private View mLoadingView;
 	private SeekBar mSeekBar;
 	private View mVideoView;
-	private Button mPlayPauseButton;
+	private ImageButton mPlayPauseButton;
 	private boolean mTracking = false;
 	private View mStreamsView = null;
 	private Spinner mLanguageSpinner;
@@ -149,7 +150,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 		mSeekBar = (SeekBar) this.findViewById(R.id.seek_bar);
 		mSeekBar.setOnSeekBarChangeListener(this);
 
-		mPlayPauseButton = (Button) this.findViewById(R.id.play_pause);
+		mPlayPauseButton = (ImageButton) this.findViewById(R.id.play_pause);
 		mPlayPauseButton.setOnClickListener(this);
 		
 		mScaleButton = this.findViewById(R.id.scale_type);
@@ -267,7 +268,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 		}
 
 		this.mPlayPauseButton
-		.setBackgroundResource(android.R.drawable.ic_media_play);
+		.setImageResource(R.drawable.ic_play_button);
 		this.mPlayPauseButton.setEnabled(true);
 		mPlay = false;
 
@@ -341,7 +342,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 							}).show();
 			return;
 		}
-		mPlayPauseButton.setBackgroundResource(android.R.drawable.ic_media_play);
+		mPlayPauseButton.setImageResource(R.drawable.ic_play_button);
 		mPlayPauseButton.setEnabled(true);
 		mPlayPauseButton.setVisibility(View.VISIBLE);
 		this.mControlsView.setVisibility(View.VISIBLE);
@@ -718,7 +719,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 	public void onFFResume(NotPlayingException result) {
 		Log.d(TAG, "onFFResume");
 		this.mPlayPauseButton
-				.setBackgroundResource(android.R.drawable.ic_media_pause);
+				.setImageResource(R.drawable.ic_pause_button);
 		this.mPlayPauseButton.setEnabled(true);
 
 		displaySystemMenu(false);
@@ -736,7 +737,7 @@ public class VideoActivity extends Activity implements OnClickListener,
 	public void onFFPause(NotPlayingException err) {
 		Log.d(TAG, "onFFPause");
 		this.mPlayPauseButton
-				.setBackgroundResource(android.R.drawable.ic_media_play);
+				.setImageResource(R.drawable.ic_play_button);
 		this.mPlayPauseButton.setEnabled(true);
 		mPlay = false;
 

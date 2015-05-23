@@ -83,6 +83,15 @@ public class SettingsActivity extends ActionBarActivity {
         myItem.add(new EnumItem("Full screen", 1, "Full screen mode."));
         data.add(myItem);
 
+        myItem = new SettingItem("Video codec thread count", SettingsBook.SETTINGS_CODEC_THREAD_COUNT);
+        myItem.add(new EnumItem("Auto", 0, "Automatically determine number of spawned threads from number of cpu cores."));
+        myItem.add(new EnumItem("1", 1, ""));
+        myItem.add(new EnumItem("2", 2, ""));
+        myItem.add(new EnumItem("3", 3, ""));
+        myItem.add(new EnumItem("4", 4, ""));
+        myItem.add(new EnumItem("5", 5, ""));
+        data.add(myItem);
+
         return data;
     }
 
@@ -201,7 +210,7 @@ public class SettingsActivity extends ActionBarActivity {
                     @Override
                     public void onClick(View v) {
                         RadioButton rb = (RadioButton) v.findViewById(R.id.textView1);
-                        if (!rb.isChecked()) {
+                        if (rb != null && !rb.isChecked()) {
                             rb.setChecked(true);
                         }
 
@@ -228,10 +237,12 @@ public class SettingsActivity extends ActionBarActivity {
 
                         _protectFromCheckedChange = true;
                         for (EnumItem enumItem : childGroup.getEnumList()) {
-                            RadioButton rb = (RadioButton) enumItem.cachedView.findViewById(R.id.textView1);
-                            if (rb != buttonView) {
-                                if (rb.isChecked())
-                                    rb.setChecked(false);
+                            if (enumItem.cachedView != null) {
+                                RadioButton rb = (RadioButton) enumItem.cachedView.findViewById(R.id.textView1);
+                                if (rb != buttonView) {
+                                    if (rb.isChecked())
+                                        rb.setChecked(false);
+                                }
                             }
                         }
                         _protectFromCheckedChange = false;

@@ -1643,19 +1643,22 @@ int player_try_open_stream(struct Player *player, enum AVMediaType codec_type,
 		return -1;
 	}
 
-	const struct AVCodec * codec = ctx->codec;
+	// setup multithreaded codec thread count
+	LOGI(1, "codec name is %s", avcodec_get_name(ctx->codec_id));
 
-	// the default thread count is good enough
-#if 0
-	// configure codec multithread
-	if (codec_type == AVMEDIA_TYPE_VIDEO) {
-		stream->codec->thread_count = av_cpu_count();
-		stream->codec->thread_type = FF_THREAD_FRAME;
-		LOGI(1, "codec name is %s", avcodec_get_name(stream->codec->codec_id));
-		LOGI(1, "setting [%d] codec thread count: %d thread_type: %d", stream_no, stream->codec->thread_count, stream->codec->thread_type);
+	int codecThreadCount;
+	glcontext_parseOptions(player->glcontext_options, &codecThreadCount);
+	if (codecThreadCount > 0) {
+
+		// configure codec multithread
+		if (codec_type == AVMEDIA_TYPE_VIDEO) {
+			stream->codec->thread_count = codecThreadCount; //av_cpu_count();
+			stream->codec->thread_type = FF_THREAD_FRAME;
+			LOGI(1, "setting [%d] codec thread count: %d thread_type: %d", stream_no, stream->codec->thread_count, stream->codec->thread_type);
+		}
 	}
-#endif
 
+	const struct AVCodec * codec = ctx->codec;
 	int err = player_open_stream(player, ctx, &codec, stream_no);
 	if (err < 0) {
 		return -1;

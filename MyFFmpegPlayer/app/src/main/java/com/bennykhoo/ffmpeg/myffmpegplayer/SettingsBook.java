@@ -10,15 +10,18 @@ import android.content.SharedPreferences;
 public class SettingsBook {
     public static final String SETTINGS_SHADER_MODE = "Settings.shaderMode";
     public static final String SETTINGS_SCREEN_MODE = "Settings.screenMode";
+    public static final String SETTINGS_CODEC_THREAD_COUNT = "Settings.codecThreadCount";
 
     public static final int END_FLAG = 0xfeff;
     public static final int SHADER_MODE_FLAG = 1;
     public static final int SCREEN_MODE_FLAG = 2;
+    public static final int CODEC_THREAD_COUNT = 3;
 
     public static int [] getSettingsFlags(Activity activity) {
         int [] result = {
                 SHADER_MODE_FLAG, getSavedOption(activity, SETTINGS_SHADER_MODE),
                 SCREEN_MODE_FLAG, getSavedOption(activity, SETTINGS_SCREEN_MODE),
+                CODEC_THREAD_COUNT, getSavedOption(activity, SETTINGS_CODEC_THREAD_COUNT),
                 END_FLAG};
 
         return result;

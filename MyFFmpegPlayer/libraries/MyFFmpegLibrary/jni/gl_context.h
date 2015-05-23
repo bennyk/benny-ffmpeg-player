@@ -23,7 +23,7 @@ class GlContext;
 
 enum ChannelTag { LEFT_CHANNEL, RIGHT_CHANNEL, SINGLE_CHANNEL };
 
-enum ContextOptions { SHADER_MODE_FLAG = 1, SCREEN_MODE_FLAG, END_FLAG = 0xfeff };
+enum ContextOptions { SHADER_MODE_FLAG = 1, SCREEN_MODE_FLAG, CODEC_THREAD_COUNT, END_FLAG = 0xfeff };
 
 enum ShaderMode { SHADER_AUTO, SHADER_RGB, SHADER_ANAGLYPHIC, SHADER_YUV, SHADER_TEST, SHADER_UNKNOWN };
 enum ScreenMode { SCREEN_STEREO, SCREEN_FULL, SCREEN_UNKNOWN };
@@ -89,8 +89,8 @@ public:
 	void setIPDDistancePx(unsigned ipdPx);
 	void destroy();
 
-private:
-	static void parseOptions(int *options, ShaderMode &shaderMode, ScreenMode &screenMode);
+public:
+	static void parseOptions(int *options, ShaderMode &shaderMode, ScreenMode &screenMode, int &codecThreadCount);
 
 public:
     int _width, _height;
@@ -127,6 +127,7 @@ void glcontext_draw_frame(GlContext *context, AVFrame *frame);
 int glcontext_swapBuffer(GlContext *context);
 void glcontext_setLookatAngles(GlContext *context, float azimuth, float pitch, float roll);
 void glcontext_setIPDDistancePx(GlContext *context, unsigned ipdPx);
+void glcontext_parseOptions(int *options, int *p_codecThreadCount);
 
 #ifdef __cplusplus
 }

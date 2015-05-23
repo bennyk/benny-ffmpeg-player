@@ -15,7 +15,7 @@ GlContext::GlContext()
 GlContext::~GlContext()
 {}
 
-void GlContext::parseOptions(int *options, ShaderMode &shaderMode, ScreenMode &screenMode)
+void GlContext::parseOptions(int *options, ShaderMode &shaderMode, ScreenMode &screenMode, int &codecThreadCount)
 {
 	int i = 0;
 
@@ -47,8 +47,13 @@ void GlContext::parseOptions(int *options, ShaderMode &shaderMode, ScreenMode &s
 			}
 			break;
 
-		default:
+		case CODEC_THREAD_COUNT:
+			codecThreadCount = options[i++];
+			LOG_INFO("setting codec thread count to %d", codecThreadCount);
 			break;
+
+		default:
+			continue;
 		}
 
 	}
@@ -180,7 +185,8 @@ bool GlContext::initialize(ANativeWindow *window, int frameWidth, int frameHeigh
     // parse argument options
     ShaderMode shaderMode;
     ScreenMode screenMode;
-    parseOptions(opts, shaderMode, screenMode);
+    int dummy;
+    parseOptions(opts, shaderMode, screenMode, dummy);
 
     stereoMode = screenMode != SCREEN_STEREO ? false : true;
 
@@ -321,3 +327,13 @@ void glcontext_setIPDDistancePx(GlContext *context, unsigned ipdPx)
 {
 	context->setIPDDistancePx(ipdPx);
 }
+
+void glcontext_parseOptions(int *options, int *p_codecThreadCount)
+{
+	ShaderMode dummy1;
+	ScreenMode dummy2;
+	int codecThreadCount;
+	GlContext::parseOptions(options, dummy1, dummy2, codecThreadCount);
+	*p_codecThreadCount = codecThreadCount;
+}
+

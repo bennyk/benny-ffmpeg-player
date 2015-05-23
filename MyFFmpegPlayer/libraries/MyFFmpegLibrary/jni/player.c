@@ -1264,37 +1264,58 @@ void * player_read_from_stream(void *data) {
 	for (;;) {
 		int ret = av_read_frame(player->input_format_ctx, pkt);
 		if (ret < 0) {
-			pthread_mutex_lock(&player->mutex_queue);
-			LOGI(3, "player_read_from_stream stream end");
-			queue = player->packets[player->video_stream_no];
-			packet_data = queue_push_start_already_locked(queue,
-					&player->mutex_queue, &player->cond_queue, &to_write,
-					(QueueCheckFunc) player_read_from_stream_check_func, player,
-					(void **) &interrupt_ret);
-			if (packet_data == NULL) {
-				if (interrupt_ret == READ_FROM_STREAM_CHECK_MSG_STOP) {
-					LOGI(2, "player_read_from_stream queue interrupt stop");
-					goto exit_loop;
-				} else if (interrupt_ret == READ_FROM_STREAM_CHECK_MSG_SEEK) {
-					LOGI(2, "player_read_from_stream queue interrupt seek");
-					goto seek_loop;
-				} else {
-					assert(FALSE);
-				}
-			}
-			packet_data->end_of_stream = TRUE;
-			LOGI(3, "player_read_from_stream sending end_of_stream packet");
-			queue_push_finish_already_locked(queue, &player->mutex_queue,
-					&player->cond_queue, to_write);
 
-			for (;;) {
-				if (player->stop)
-					goto exit_loop;
-				if (player->seek_position != DO_NOT_SEEK)
-					goto seek_loop;
-				pthread_cond_wait(&player->cond_queue, &player->mutex_queue);
+			// record error in log
+			char errbuf[128];
+			const char *errbuf_ptr = errbuf;
+			if (av_strerror(ret, errbuf, sizeof(errbuf)) < 0) {
+				errbuf_ptr = strerror(AVUNERROR(ret));
 			}
-			pthread_mutex_unlock(&player->mutex_queue);
+			LOGE(3, "player_read_from_stream av_read_frame error (%d): \"%s\"", ret, errbuf_ptr);
+
+			if ((ret == AVERROR_EOF || avio_feof(player->input_format_ctx->pb))) {
+				pthread_mutex_lock(&player->mutex_queue);
+
+				LOGI(3, "player_read_from_stream stream end");
+				queue = player->packets[player->video_stream_no];
+				packet_data = queue_push_start_already_locked(queue,
+						&player->mutex_queue, &player->cond_queue, &to_write,
+						(QueueCheckFunc) player_read_from_stream_check_func, player,
+						(void **) &interrupt_ret);
+				if (packet_data == NULL) {
+					if (interrupt_ret == READ_FROM_STREAM_CHECK_MSG_STOP) {
+						LOGI(2, "player_read_from_stream queue interrupt stop");
+						goto exit_loop;
+					} else if (interrupt_ret == READ_FROM_STREAM_CHECK_MSG_SEEK) {
+						LOGI(2, "player_read_from_stream queue interrupt seek");
+						goto seek_loop;
+					} else {
+						assert(FALSE);
+					}
+				}
+				packet_data->end_of_stream = TRUE;
+				LOGI(3, "player_read_from_stream sending end_of_stream packet");
+				queue_push_finish_already_locked(queue, &player->mutex_queue,
+						&player->cond_queue, to_write);
+				for (;;) {
+					if (player->stop)
+						goto exit_loop;
+					if (player->seek_position != DO_NOT_SEEK)
+						goto seek_loop;
+					pthread_cond_wait(&player->cond_queue, &player->mutex_queue);
+
+				}
+				pthread_mutex_unlock(&player->mutex_queue);
+			}
+			else {
+				// wait for some millisecs before reading again.
+				LOGI(3, "player_read_from_stream waiting");
+				pthread_mutex_lock(&player->mutex_queue);
+				pthread_cond_timeout_np(&player->cond_queue, &player->mutex_queue, 10);
+				pthread_mutex_unlock(&player->mutex_queue);
+				player->skipped_frames++;
+				goto end_loop;
+			}
 		}
 
 		LOGI(8, "player_read_from_stream Read frame");

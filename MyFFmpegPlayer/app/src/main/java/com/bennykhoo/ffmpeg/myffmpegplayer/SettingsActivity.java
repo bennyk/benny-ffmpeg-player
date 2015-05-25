@@ -84,7 +84,7 @@ public class SettingsActivity extends ActionBarActivity {
         data.add(myItem);
 
         myItem = new SettingItem("Video codec thread count", SettingsBook.SETTINGS_CODEC_THREAD_COUNT);
-        myItem.add(new EnumItem("Auto", 0, "Automatically determine number of spawned threads from number of cpu cores."));
+        myItem.add(new EnumItem("Auto", 0, "Restrict the number of spawned threads to number of cpu cores."));
         myItem.add(new EnumItem("1", 1, ""));
         myItem.add(new EnumItem("2", 2, ""));
         myItem.add(new EnumItem("3", 3, ""));

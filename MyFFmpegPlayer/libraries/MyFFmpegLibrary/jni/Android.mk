@@ -1,6 +1,6 @@
 
 LOCAL_PATH := $(call my-dir)
-MY_SYSROOT := /Users/bennykhoo/Sources/MyVR/android-ffmpeg-x264/Project/jni/out/$(TARGET_ARCH_ABI)
+MY_SYSROOT := ../../../../../android-ffmpeg-x264/Project/jni/out/$(TARGET_ARCH_ABI)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := ffmpeg-jni

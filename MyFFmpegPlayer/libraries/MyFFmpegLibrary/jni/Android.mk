@@ -1,6 +1,6 @@
 
 LOCAL_PATH := $(call my-dir)
-MY_SYSROOT := ../../../../android-ffmpeg-x264/Project/jni/out/$(TARGET_ARCH_ABI)
+MY_SYSROOT := ../../../android-ffmpeg-x264/Project/jni/out/$(TARGET_ARCH_ABI)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := ffmpeg-jni
@@ -8,7 +8,7 @@ LOCAL_MODULE := ffmpeg-jni
 LOCAL_C_INCLUDES += $(MY_SYSROOT)/include
 
 # ffmpeg private header files
-LOCAL_C_INCLUDES += ../../../../android-ffmpeg-x264/Project/jni/ffmpeg
+LOCAL_C_INCLUDES += ../../../android-ffmpeg-x264/Project/jni/ffmpeg
 
 # opengl helpers
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include $(LOCAL_PATH)/glm
